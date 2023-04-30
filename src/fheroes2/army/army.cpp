@@ -49,6 +49,7 @@
 #include "logging.h"
 #include "luck.h"
 #include "maps_tiles.h"
+#include "maps_tiles_helper.h"
 #include "morale.h"
 #include "mp2.h"
 #include "payment.h"
@@ -843,7 +844,7 @@ bool Troops::mergeWeakestTroopsIfNeeded()
     return true;
 }
 
-void Troops::AssignToFirstFreeSlot( const Troop & troopToAssign, const uint32_t count )
+void Troops::AssignToFirstFreeSlot( const Troop & troopToAssign, const uint32_t count ) const
 {
     for ( Troop * troop : *this ) {
         assert( troop != nullptr );
@@ -857,7 +858,7 @@ void Troops::AssignToFirstFreeSlot( const Troop & troopToAssign, const uint32_t 
     }
 }
 
-void Troops::JoinAllTroopsOfType( const Troop & targetTroop )
+void Troops::JoinAllTroopsOfType( const Troop & targetTroop ) const
 {
     const int troopID = targetTroop.GetID();
     const int totalMonsterCount = GetCountMonsters( troopID );
@@ -918,7 +919,7 @@ void Army::setFromTile( const Maps::Tiles & tile )
 
     const bool isCaptureObject = MP2::isCaptureObject( tile.GetObject( false ) );
     if ( isCaptureObject )
-        color = tile.QuantityColor();
+        color = getColorFromTile( tile );
 
     switch ( tile.GetObject( false ) ) {
     case MP2::OBJ_PYRAMID:
@@ -1041,15 +1042,6 @@ void Army::setFromTile( const Maps::Tiles & tile )
         at( 3 )->Set( Monster::EARTH_ELEMENT, 2 );
         break;
 
-    case MP2::OBJ_ABANDONED_MINE: {
-        const Troop & troop = world.GetCapturedObject( tile.GetIndex() ).GetTroop();
-        assert( troop.isValid() );
-
-        ArrangeForBattle( troop.GetMonster(), troop.GetCount(), tile.GetIndex(), false );
-
-        break;
-    }
-
     default:
         if ( isCaptureObject ) {
             CapturedObject & capturedObject = world.GetCapturedObject( tile.GetIndex() );
@@ -1060,7 +1052,7 @@ void Army::setFromTile( const Maps::Tiles & tile )
             }
         }
         else {
-            const Troop troop = tile.QuantityTroop();
+            const Troop troop = getTroopFromTile( tile );
 
             if ( troop.isValid() ) {
                 ArrangeForBattle( troop.GetMonster(), troop.GetCount(), tile.GetIndex(), true );

@@ -59,6 +59,7 @@
 #include "maps.h"
 #include "maps_objects.h"
 #include "maps_tiles.h"
+#include "maps_tiles_helper.h"
 #include "math_base.h"
 #include "monster.h"
 #include "mp2.h"
@@ -137,29 +138,29 @@ namespace
     void DialogCaptureResourceObject( const std::string & hdr, const std::string & str, const int32_t resourceType )
     {
         const payment_t info = ProfitConditions::FromMine( resourceType );
-        int32_t resouceCount = 0;
+        int32_t resourceCount = 0;
 
         switch ( resourceType ) {
         case Resource::MERCURY:
-            resouceCount = info.mercury;
+            resourceCount = info.mercury;
             break;
         case Resource::WOOD:
-            resouceCount = info.wood;
+            resourceCount = info.wood;
             break;
         case Resource::ORE:
-            resouceCount = info.ore;
+            resourceCount = info.ore;
             break;
         case Resource::SULFUR:
-            resouceCount = info.sulfur;
+            resourceCount = info.sulfur;
             break;
         case Resource::CRYSTAL:
-            resouceCount = info.crystal;
+            resourceCount = info.crystal;
             break;
         case Resource::GEMS:
-            resouceCount = info.gems;
+            resourceCount = info.gems;
             break;
         case Resource::GOLD:
-            resouceCount = info.gold;
+            resourceCount = info.gold;
             break;
         default:
             // You're passing an invalid resource type. Check your logic!
@@ -168,10 +169,10 @@ namespace
         }
 
         std::string perday = _( "%{count} / day" );
-        StringReplace( perday, "%{count}", resouceCount );
+        StringReplace( perday, "%{count}", resourceCount );
 
         std::string msg = str;
-        switch ( resouceCount ) {
+        switch ( resourceCount ) {
         case 1:
             StringReplace( msg, "%{count}", _( "one" ) );
             break;
@@ -179,7 +180,7 @@ namespace
             StringReplace( msg, "%{count}", _( "two" ) );
             break;
         default:
-            StringReplace( msg, "%{count}", resouceCount );
+            StringReplace( msg, "%{count}", resourceCount );
             break;
         }
 
@@ -223,10 +224,11 @@ namespace
                     Interface::Basic::Get().GetGameArea().runSingleObjectAnimation(
                         std::make_shared<Interface::ObjectFadingOutInfo>( tile.GetObjectUID(), tile.GetIndex(), tile.GetObject() ) );
 
-                    tile.MonsterSetCount( 0 );
+                    setMonsterCountOnTile( tile, 0 );
                 }
-                else
-                    tile.MonsterSetCount( troop.GetCount() - recruit );
+                else {
+                    setMonsterCountOnTile( tile, troop.GetCount() - recruit );
+                }
 
                 const payment_t paymentCosts = troop.GetMonster().GetCost() * recruit;
                 hero.GetKingdom().OddFundsResource( paymentCosts );
@@ -279,7 +281,7 @@ namespace
     void ActionToMonster( Heroes & hero, int32_t dst_index )
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        Troop troop = tile.QuantityTroop();
+        Troop troop = getTroopFromTile( tile );
 
         Interface::Basic & I = Interface::Basic::Get();
 
@@ -385,7 +387,7 @@ namespace
 #endif
 
                 if ( monstersLeft > 0 ) {
-                    tile.MonsterSetCount( monstersLeft );
+                    setMonsterCountOnTile( tile, monstersLeft );
 
                     if ( Maps::isMonsterOnTileJoinConditionFree( tile ) ) {
                         Maps::setMonsterOnTileJoinCondition( tile, Monster::JOIN_CONDITION_MONEY );
@@ -404,7 +406,7 @@ namespace
             Interface::Basic::Get().GetGameArea().runSingleObjectAnimation(
                 std::make_shared<Interface::ObjectFadingOutInfo>( tile.GetObjectUID(), tile.GetIndex(), tile.GetObject() ) );
 
-            tile.MonsterSetCount( 0 );
+            setMonsterCountOnTile( tile, 0 );
         }
 
         // Clear the hero's attacked monster tile index
@@ -625,7 +627,7 @@ namespace
         hero.SetShipMaster( false );
         AudioManager::PlaySound( M82::KILLFADE );
         hero.GetPath().Hide();
-        hero.FadeIn( fheroes2::Point( offset.x * Game::HumanHeroAnimSkip(), offset.y * Game::HumanHeroAnimSkip() ) );
+        hero.FadeIn( offset );
 
         // Clear hero position marker from the boat and scout the area on radar after disembarking.
         Interface::Basic & I = Interface::Basic::Get();
@@ -649,7 +651,7 @@ namespace
             Dialog::Message( MP2::StringObject( objectType ), ( sign ? sign->message : "No message provided" ), Font::BIG, Dialog::OK );
         }
         else {
-            const Funds funds = tile.QuantityFunds();
+            const Funds funds = getFundsFromTile( tile );
 
             if ( objectType == MP2::OBJ_CAMPFIRE ) {
                 const fheroes2::Text header( MP2::StringObject( objectType ), fheroes2::FontType::normalYellow() );
@@ -658,7 +660,7 @@ namespace
                 fheroes2::showResourceMessage( header, body, Dialog::OK, funds );
             }
             else {
-                ResourceCount rc = tile.QuantityResourceCount();
+                ResourceCount rc = getResourcesFromTile( tile );
 
                 I.GetStatusWindow().SetResource( rc.first, rc.second );
                 I.SetRedraw( Interface::REDRAW_STATUS );
@@ -671,7 +673,7 @@ namespace
 
         I.GetGameArea().runSingleObjectAnimation( std::make_shared<Interface::ObjectFadingOutInfo>( tile.GetObjectUID(), tile.GetIndex(), tile.GetObject() ) );
 
-        tile.QuantityReset();
+        resetObjectInfoOnTile( tile );
 
         if ( objectType == MP2::OBJ_RESOURCE ) {
             // Update the position of picked up resource on radar to remove its mark.
@@ -686,7 +688,7 @@ namespace
     void ActionToObjectResource( const Heroes & hero, const MP2::MapObjectType objectType, int32_t dst_index )
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        ResourceCount rc = tile.QuantityResourceCount();
+        ResourceCount rc = getResourcesFromTile( tile );
 
         std::string msg;
         const std::string & caption = MP2::StringObject( objectType );
@@ -751,7 +753,7 @@ namespace
             Dialog::Message( caption, msg, Font::BIG, Dialog::OK );
         }
 
-        tile.QuantityReset();
+        resetObjectInfoOnTile( tile );
         hero.setVisitedForAllies( dst_index );
 
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
@@ -764,7 +766,7 @@ namespace
         const std::string title( MP2::StringObject( objectType ) );
 
         // artifact
-        if ( tile.QuantityIsValid() ) {
+        if ( doesTileContainValuableItems( tile ) ) {
             if ( hero.IsFullBagArtifacts() ) {
                 uint32_t gold = GoldInsteadArtifact( objectType );
                 const Funds funds( Resource::GOLD, gold );
@@ -776,7 +778,7 @@ namespace
                 hero.GetKingdom().AddFundsResource( funds );
             }
             else {
-                const Artifact & art = tile.QuantityArtifact();
+                const Artifact & art = getArtifactFromTile( tile );
                 message += '\n';
                 message.append( _( "Searching through the tattered clothing, you find the %{artifact}." ) );
                 StringReplace( message, "%{artifact}", art.GetName() );
@@ -790,7 +792,7 @@ namespace
                 hero.PickupArtifact( art );
             }
 
-            tile.QuantityReset();
+            resetObjectInfoOnTile( tile );
         }
         else {
             message += '\n';
@@ -809,8 +811,8 @@ namespace
         std::string message( _( "You come across an old wagon left by a trader who didn't quite make it to safe terrain." ) );
         const std::string title( MP2::StringObject( MP2::OBJ_WAGON ) );
 
-        if ( tile.QuantityIsValid() ) {
-            const Artifact & art = tile.QuantityArtifact();
+        if ( doesTileContainValuableItems( tile ) ) {
+            const Artifact & art = getArtifactFromTile( tile );
 
             if ( art.isValid() ) {
                 if ( hero.IsFullBagArtifacts() ) {
@@ -833,7 +835,7 @@ namespace
                 }
             }
             else {
-                const Funds & funds = tile.QuantityFunds();
+                const Funds & funds = getFundsFromTile( tile );
                 AudioManager::PlaySound( M82::EXPERNCE );
                 message += '\n';
                 message.append( _( "Inside, you find some of the wagon's cargo still intact." ) );
@@ -844,7 +846,7 @@ namespace
                 hero.GetKingdom().AddFundsResource( funds );
             }
 
-            tile.QuantityReset();
+            resetObjectInfoOnTile( tile );
         }
         else {
             message += '\n';
@@ -863,7 +865,7 @@ namespace
         std::string msg;
         const std::string title( MP2::StringObject( objectType ) );
 
-        const Funds & funds = tile.QuantityFunds();
+        const Funds & funds = getFundsFromTile( tile );
 
         if ( 0 < funds.GetValidItemsCount() ) {
             msg = funds.wood && funds.gold ? _( "You search through the flotsam, and find some wood and some gold." )
@@ -884,14 +886,16 @@ namespace
         Interface::Basic::Get().GetGameArea().runSingleObjectAnimation(
             std::make_shared<Interface::ObjectFadingOutInfo>( tile.GetObjectUID(), tile.GetIndex(), tile.GetObject() ) );
 
-        tile.QuantityReset();
+        resetObjectInfoOnTile( tile );
 
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
     }
 
     void ActionToShrine( Heroes & hero, int32_t dst_index )
     {
-        const Spell & spell = world.GetTiles( dst_index ).QuantitySpell();
+        const Spell & spell = getSpellFromTile( world.GetTiles( dst_index ) );
+        assert( spell.isValid() );
+
         const uint32_t spell_level = spell.Level();
 
         std::string head;
@@ -952,7 +956,7 @@ namespace
 
     void ActionToWitchsHut( Heroes & hero, const MP2::MapObjectType objectType, int32_t dst_index )
     {
-        const Skill::Secondary & skill = world.GetTiles( dst_index ).QuantitySkill();
+        const Skill::Secondary & skill = getSecondarySkillFromTile( world.GetTiles( dst_index ) );
 
         // If this assertion blows up the object is not set properly.
         assert( skill.isValid() );
@@ -1055,7 +1059,7 @@ namespace
     void ActionToPyramid( Heroes & hero, const MP2::MapObjectType objectType, int32_t dst_index )
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        const Spell & spell = tile.QuantitySpell();
+        const Spell & spell = getSpellFromTile( tile );
 
         const std::string ask = _(
             "You come upon the pyramid of a great and ancient king.\nYou are tempted to search it for treasure, but all the old stories warn of fearful curses and undead "
@@ -1109,7 +1113,7 @@ namespace
                         Dialog::Message( title, msg, Font::BIG, Dialog::OK );
                     }
 
-                    tile.QuantityReset();
+                    resetObjectInfoOnTile( tile );
                     hero.SetVisited( dst_index, Visit::GLOBAL );
                 }
                 else {
@@ -1248,7 +1252,7 @@ namespace
     void ActionToPoorMoraleObject( Heroes & hero, const MP2::MapObjectType objectType, int32_t dst_index )
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        uint32_t gold = tile.QuantityGold();
+        uint32_t gold = getGoldAmountFromTile( tile );
         std::string ask;
         std::string msg;
         std::string win;
@@ -1295,7 +1299,7 @@ namespace
 
                     complete = true;
 
-                    const Artifact & art = tile.QuantityArtifact();
+                    const Artifact & art = getArtifactFromTile( tile );
                     if ( art.isValid() ) {
                         if ( hero.IsFullBagArtifacts() ) {
                             gold = GoldInsteadArtifact( objectType );
@@ -1330,7 +1334,7 @@ namespace
             }
 
             if ( complete ) {
-                tile.QuantityReset();
+                resetObjectInfoOnTile( tile );
                 hero.SetVisited( dst_index, Visit::GLOBAL );
             }
             else if ( 0 == gold ) {
@@ -1481,7 +1485,7 @@ namespace
             hero.GetKingdom().AddFundsResource( Funds( Resource::GOLD, gold ) );
         }
         else {
-            const Artifact & art = tile.QuantityArtifact();
+            const Artifact & art = getArtifactFromTile( tile );
             std::string str = _(
                 "You've pulled a shipwreck survivor from certain death in an unforgiving ocean. Grateful, he rewards you for your act of kindness by giving you the %{art}." );
             StringReplace( str, "%{art}", art.GetName() );
@@ -1500,7 +1504,7 @@ namespace
         Interface::Basic::Get().GetGameArea().runSingleObjectAnimation(
             std::make_shared<Interface::ObjectFadingOutInfo>( tile.GetObjectUID(), tile.GetIndex(), tile.GetObject() ) );
 
-        tile.QuantityReset();
+        resetObjectInfoOnTile( tile );
 
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
     }
@@ -1514,14 +1518,14 @@ namespace
             Dialog::Message( title, _( "You cannot pick up this artifact, you already have a full load!" ), Font::BIG, Dialog::OK );
         else {
             uint32_t cond = tile.QuantityVariant();
-            Artifact art = tile.QuantityArtifact();
+            Artifact art = getArtifactFromTile( tile );
 
             bool result = false;
             std::string msg;
 
             // 1,2,3 - gold, gold + res
             if ( 0 < cond && cond < 4 ) {
-                Funds payment = tile.QuantityFunds();
+                Funds payment = getFundsFromTile( tile );
 
                 if ( 1 == cond ) {
                     msg = _( "A leprechaun offers you the %{art} for the small price of %{gold} Gold." );
@@ -1531,7 +1535,7 @@ namespace
                     msg = _( "A leprechaun offers you the %{art} for the small price of %{gold} Gold and %{count} %{res}." );
 
                     StringReplace( msg, "%{gold}", payment.Get( Resource::GOLD ) );
-                    ResourceCount rc = tile.QuantityResourceCount();
+                    const ResourceCount rc = getResourcesFromTile( tile );
                     StringReplace( msg, "%{count}", rc.second );
                     StringReplace( msg, "%{res}", Resource::String( rc.first ) );
                 }
@@ -1563,7 +1567,7 @@ namespace
             }
             // 4,5 - need to have skill wisdom or leadership
             else if ( 3 < cond && cond < 6 ) {
-                const Skill::Secondary & skill = tile.QuantitySkill();
+                const Skill::Secondary & skill = getSecondarySkillFromTile( tile );
 
                 if ( hero.HasSecondarySkill( skill.Skill() ) ) {
                     const char * artifactDiscoveryDescription = Artifact::getDiscoveryDescription( art );
@@ -1672,7 +1676,7 @@ namespace
 
                 I.GetGameArea().runSingleObjectAnimation( std::make_shared<Interface::ObjectFadingOutInfo>( tile.GetObjectUID(), tile.GetIndex(), tile.GetObject() ) );
 
-                tile.QuantityReset();
+                resetObjectInfoOnTile( tile );
 
                 const fheroes2::Point artifactPosition = Maps::GetPoint( dst_index );
 
@@ -1691,12 +1695,12 @@ namespace
         const std::string & hdr = MP2::StringObject( objectType );
 
         std::string msg;
-        uint32_t gold = tile.QuantityGold();
+        uint32_t gold = getGoldAmountFromTile( tile );
 
         // dialog
         if ( tile.isWater() ) {
             if ( gold ) {
-                const Artifact & art = tile.QuantityArtifact();
+                const Artifact & art = getArtifactFromTile( tile );
 
                 if ( art.isValid() ) {
                     if ( hero.IsFullBagArtifacts() ) {
@@ -1738,7 +1742,7 @@ namespace
             }
         }
         else {
-            const Artifact & art = tile.QuantityArtifact();
+            const Artifact & art = getArtifactFromTile( tile );
 
             if ( gold ) {
                 const uint32_t expr = gold > 500 ? gold - 500 : 500;
@@ -1784,7 +1788,7 @@ namespace
         Interface::Basic::Get().GetGameArea().runSingleObjectAnimation(
             std::make_shared<Interface::ObjectFadingOutInfo>( tile.GetObjectUID(), tile.GetIndex(), tile.GetObject() ) );
 
-        tile.QuantityReset();
+        resetObjectInfoOnTile( tile );
 
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
     }
@@ -1792,7 +1796,7 @@ namespace
     void ActionToGenieLamp( Heroes & hero, const MP2::MapObjectType objectType, int32_t dst_index )
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        const Troop & troop = tile.QuantityTroop();
+        const Troop & troop = getTroopFromTile( tile );
         if ( !troop.isValid() ) {
             return;
         }
@@ -1904,7 +1908,7 @@ namespace
     {
         Maps::Tiles & tile = world.GetTiles( dstIndex );
 
-        if ( !hero.isFriends( tile.QuantityColor() ) ) {
+        if ( !hero.isFriends( getColorFromTile( tile ) ) ) {
             auto updateRadar = [objectType, dstIndex]() {
                 // TODO: make a function that will automatically get the object size in tiles and return a ROI for radar update.
                 // Set the radar update ROI according to captured object size and position.
@@ -1918,7 +1922,6 @@ namespace
                     radarRoi.height = 2;
                     break;
                 case MP2::OBJ_ALCHEMIST_LAB:
-                case MP2::OBJ_ABANDONED_MINE:
                 case MP2::OBJ_MINES:
                     --radarRoi.x;
                     --radarRoi.y;
@@ -1940,25 +1943,15 @@ namespace
                 I.Redraw( Interface::REDRAW_GAMEAREA | Interface::REDRAW_RADAR );
             };
 
-            auto removeObjectProtection = [&hero, objectType, &tile, &updateRadar]( const bool isUpdateRadar ) {
+            auto removeObjectProtection = [&tile]() {
                 // Clear any metadata related to spells
                 tile.clearAdditionalMetadata();
-
-                // Restore the abandoned mine
-                if ( objectType == MP2::OBJ_ABANDONED_MINE ) {
-                    Maps::Tiles::UpdateAbandonedMineSprite( tile );
-                    hero.SetMapsObject( MP2::OBJ_MINES );
-                }
-
-                if ( isUpdateRadar ) {
-                    updateRadar();
-                }
             };
 
             auto captureObject = [&hero, objectType, &tile, &updateRadar, &removeObjectProtection]() {
-                removeObjectProtection( false );
+                removeObjectProtection();
 
-                tile.QuantitySetColor( hero.GetColor() );
+                setColorOnTile( tile, hero.GetColor() );
 
                 updateRadar();
 
@@ -1979,15 +1972,9 @@ namespace
                     body = _( "You gain control of a sawmill. It will provide you with %{count} units of wood per day." );
                     break;
 
-                case MP2::OBJ_ABANDONED_MINE:
                 case MP2::OBJ_MINES: {
-                    resource = tile.QuantityResourceCount().first;
+                    resource = getResourcesFromTile( tile ).first;
                     header = Maps::GetMinesName( resource );
-
-                    if ( objectType == MP2::OBJ_ABANDONED_MINE && Maps::getSpellIdFromTile( tile ) != Spell::HAUNT ) {
-                        body = _( "You beat the Ghosts and are able to restore the mine to production." );
-                        break;
-                    }
 
                     switch ( resource ) {
                     case Resource::ORE:
@@ -2053,7 +2040,7 @@ namespace
                 else {
                     // The army should include only the original monsters
                     const uint32_t monstersLeft = army.getTotalCount();
-                    assert( monstersLeft == army.GetCountMonsters( tile.QuantityMonster() ) );
+                    assert( monstersLeft == army.GetCountMonsters( getMonsterFromTile( tile ) ) );
 
                     Troop & troop = world.GetCapturedObject( dstIndex ).GetTroop();
                     troop.SetCount( monstersLeft );
@@ -2061,7 +2048,7 @@ namespace
                     // If all the guards are defeated, but the hero has lost the battle,
                     // just remove the protection from the object
                     if ( monstersLeft == 0 ) {
-                        removeObjectProtection( true );
+                        removeObjectProtection();
                     }
 
                     BattleLose( hero, result, true );
@@ -2075,28 +2062,58 @@ namespace
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() << " object: " << MP2::StringObject( objectType ) )
     }
 
-    void ActionToAbandonedMine( Heroes & hero, const MP2::MapObjectType objectType, int32_t dst_index )
+    void ActionToAbandonedMine( Heroes & hero, const MP2::MapObjectType objectType, const int32_t dstIndex )
     {
         bool enter = false;
 
         {
             const MusicalEffectPlayer musicalEffectPlayer( MUS::WATCHTOWER );
 
-            enter = ( Dialog::Message( MP2::StringObject( MP2::OBJ_ABANDONED_MINE ),
-                                       _( "You come upon an abandoned gold mine. The mine appears to be haunted. Do you wish to enter?" ), Font::BIG,
-                                       Dialog::YES | Dialog::NO )
-                      == Dialog::YES );
+            enter
+                = ( Dialog::Message( MP2::StringObject( objectType ), _( "You come upon an abandoned gold mine. The mine appears to be haunted. Do you wish to enter?" ),
+                                     Font::BIG, Dialog::YES | Dialog::NO )
+                    == Dialog::YES );
         }
 
         if ( enter ) {
-            ActionToCaptureObject( hero, objectType, dst_index );
+            Maps::Tiles & tile = world.GetTiles( dstIndex );
+
+            Army army( tile );
+
+            Battle::Result result = Battle::Loader( hero.GetArmy(), army, dstIndex );
+
+            if ( result.AttackerWins() ) {
+                hero.IncreaseExperience( result.GetExperienceAttacker() );
+
+                Maps::Tiles::RestoreAbandonedMine( tile, Resource::GOLD );
+                hero.SetMapsObject( MP2::OBJ_MINES );
+                setColorOnTile( tile, hero.GetColor() );
+
+                // TODO: make a function that will automatically get the object size in tiles and return a ROI for radar update.
+                // Set the radar update ROI according to captured object size and position.
+                const fheroes2::Point tilePoint = Maps::GetPoint( dstIndex );
+                const fheroes2::Rect radarRoi( tilePoint.x - 1, tilePoint.y - 1, 3, 2 );
+
+                Interface::Basic & I = Interface::Basic::Get();
+
+                // Update the object on radar.
+                I.GetRadar().SetRenderArea( radarRoi );
+                I.Redraw( Interface::REDRAW_GAMEAREA | Interface::REDRAW_RADAR );
+
+                Dialog::Message( MP2::StringObject( objectType ), _( "You beat the Ghosts and are able to restore the mine to production." ), Font::BIG, Dialog::OK );
+            }
+            else {
+                BattleLose( hero, result, true );
+            }
         }
+
+        DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
     }
 
     void ActionToDwellingJoinMonster( Heroes & hero, const MP2::MapObjectType objectType, int32_t dst_index )
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        const Troop & troop = tile.QuantityTroop();
+        const Troop & troop = getTroopFromTile( tile );
 
         const std::string title( MP2::StringObject( objectType ) );
 
@@ -2125,7 +2142,7 @@ namespace
                     Dialog::Message( troop.GetName(), _( "You are unable to recruit at this time, your ranks are full." ), Font::BIG, Dialog::OK );
                 }
                 else {
-                    tile.MonsterSetCount( 0 );
+                    setMonsterCountOnTile( tile, 0 );
                     hero.GetArmy().JoinTroop( troop );
 
                     Interface::Basic::Get().SetRedraw( Interface::REDRAW_STATUS );
@@ -2203,7 +2220,7 @@ namespace
             return;
         }
 
-        const Troop & troop = tile.QuantityTroop();
+        const Troop & troop = getTroopFromTile( tile );
 
         const std::string title( MP2::StringObject( objectType ) );
 
@@ -2292,8 +2309,8 @@ namespace
         const Outcome outcome = [dst_index, &title, objectIsEmptyMsg, recruitmentAvailableMsg, warningMsg]() {
             const Maps::Tiles & tile = world.GetTiles( dst_index );
 
-            if ( tile.QuantityColor() != Color::NONE ) {
-                const Troop troop = tile.QuantityTroop();
+            if ( getColorFromTile( tile ) != Color::NONE ) {
+                const Troop troop = getTroopFromTile( tile );
 
                 if ( !troop.isValid() ) {
                     Dialog::Message( title, objectIsEmptyMsg, Font::BIG, Dialog::OK );
@@ -2331,7 +2348,7 @@ namespace
         case Outcome::IgnoreFight:
             break;
         case Outcome::Recruit: {
-            const Troop troop = tile.QuantityTroop();
+            const Troop troop = getTroopFromTile( tile );
             assert( troop.isValid() );
 
             RecruitMonsterFromTile( hero, tile, title, troop, false );
@@ -2348,11 +2365,11 @@ namespace
                 hero.IncreaseExperience( res.GetExperienceAttacker() );
 
                 // Set ownership of the dwelling to a Neutral (gray) player so that any player can recruit troops without a fight.
-                tile.QuantitySetColor( Color::UNUSED );
+                setColorOnTile( tile, Color::UNUSED );
                 tile.SetObjectPassable( true );
 
                 if ( Dialog::Message( title, victoryMsg, Font::BIG, Dialog::YES | Dialog::NO ) == Dialog::YES ) {
-                    const Troop troop = tile.QuantityTroop();
+                    const Troop troop = getTroopFromTile( tile );
                     assert( troop.isValid() );
 
                     RecruitMonsterFromTile( hero, tile, title, troop, false );
@@ -2629,6 +2646,8 @@ namespace
                     hero.SetVisited( dst_index, Visit::GLOBAL );
                     hero.setVisitedForAllies( dst_index );
 
+                    // Fully update fog directions and redraw radar and game area.
+                    Interface::GameArea::updateMapFogDirections();
                     Interface::Basic & I = Interface::Basic::Get();
                     I.SetRedraw( Interface::REDRAW_GAMEAREA | Interface::REDRAW_RADAR );
                 }
@@ -2652,7 +2671,9 @@ namespace
         if ( event_maps && event_maps->isAllow( hero.GetColor() ) ) {
             hero.SetMove( false );
 
-            std::vector<fheroes2::ResourceDialogElement> resourceUI = fheroes2::getResourceDialogElements( event_maps->resources );
+            const Funds fundsToUpdate = Resource::CalculateEventResourceUpdate( hero.GetKingdom().GetFunds(), event_maps->resources );
+
+            std::vector<fheroes2::ResourceDialogElement> resourceUI = fheroes2::getResourceDialogElements( fundsToUpdate );
             std::unique_ptr<fheroes2::ArtifactDialogElement> artifactUI;
 
             if ( event_maps->resources.GetValidItemsCount() ) {
@@ -2723,7 +2744,7 @@ namespace
                              Font::BIG, Dialog::OK );
         }
         else {
-            const Funds & funds = tile.QuantityFunds();
+            const Funds & funds = getFundsFromTile( tile );
             bool increaseExperience = ( funds.GetValidItemsCount() == 0 );
 
             const int level = hero.GetLevel();
@@ -2746,7 +2767,7 @@ namespace
                     increaseExperience = ( fheroes2::showMessage( titleUI, messageUI, Dialog::YES | Dialog::NO, { &experienceUI } ) == Dialog::YES );
                 }
                 else {
-                    const ResourceCount & rc = tile.QuantityResourceCount();
+                    const ResourceCount & rc = getResourcesFromTile( tile );
 
                     if ( hero.GetKingdom().AllowPayment( funds ) ) {
                         std::string msg = _( "Upon your approach, the tree opens its eyes in delight." );
@@ -2839,7 +2860,7 @@ namespace
                 return Outcome::Ignore;
             }
 
-            if ( !tile.QuantityIsValid() ) {
+            if ( !doesTileContainValuableItems( tile ) ) {
                 Dialog::Message( title, _( "Except for evidence of a terrible battle, the cave is empty." ), Font::BIG, Dialog::OK );
 
                 return Outcome::Empty;
@@ -2869,7 +2890,7 @@ namespace
                 return Outcome::Experience;
             }
             case 2: {
-                const uint32_t gold = tile.QuantityGold();
+                const uint32_t gold = getGoldAmountFromTile( tile );
 
                 std::string msg = _(
                     "The Demon screams its challenge and attacks! After a short, desperate battle, you slay the monster and receive %{exp} experience points and %{count} gold." );
@@ -2884,7 +2905,7 @@ namespace
                 return Outcome::ExperienceAndGold;
             }
             case 3: {
-                const Artifact art = tile.QuantityArtifact();
+                const Artifact art = getArtifactFromTile( tile );
                 if ( !art.isValid() ) {
                     return Outcome::Invalid;
                 }
@@ -2902,7 +2923,7 @@ namespace
             }
             default: {
                 const Kingdom & kingdom = hero.GetKingdom();
-                const uint32_t gold = tile.QuantityGold();
+                const uint32_t gold = getGoldAmountFromTile( tile );
                 const Funds payment( Resource::GOLD, gold );
 
                 if ( !kingdom.AllowPayment( payment ) ) {
@@ -2934,7 +2955,7 @@ namespace
 
             if ( outcome != Outcome::Empty ) {
                 Maps::Tiles & tile = world.GetTiles( dst_index );
-                assert( tile.QuantityIsValid() );
+                assert( doesTileContainValuableItems( tile ) );
 
                 switch ( outcome ) {
                 case Outcome::BattleWithServants: {
@@ -2967,7 +2988,7 @@ namespace
 
                     break;
                 case Outcome::ExperienceAndGold: {
-                    const uint32_t gold = tile.QuantityGold();
+                    const uint32_t gold = getGoldAmountFromTile( tile );
 
                     hero.IncreaseExperience( demonSlayingExperience );
                     kingdom.AddFundsResource( Funds( Resource::GOLD, gold ) );
@@ -2975,7 +2996,7 @@ namespace
                     break;
                 }
                 case Outcome::ExperienceAndArtifact: {
-                    const Artifact art = tile.QuantityArtifact();
+                    const Artifact art = getArtifactFromTile( tile );
 
                     hero.IncreaseExperience( demonSlayingExperience );
                     hero.PickupArtifact( art );
@@ -2983,7 +3004,7 @@ namespace
                     break;
                 }
                 case Outcome::PayOff: {
-                    const uint32_t gold = tile.QuantityGold();
+                    const uint32_t gold = getGoldAmountFromTile( tile );
                     const Funds payment( Resource::GOLD, gold );
 
                     kingdom.OddFundsResource( payment );
@@ -3003,7 +3024,7 @@ namespace
                     break;
                 }
 
-                tile.QuantityReset();
+                resetObjectInfoOnTile( tile );
             }
 
             // Even if the hero has been defeated by a demon (and no longer belongs to any
@@ -3389,7 +3410,7 @@ namespace
 
         const std::string title = MP2::StringObject( objectType );
 
-        if ( kingdom.IsVisitTravelersTent( tile.QuantityColor() ) ) {
+        if ( kingdom.IsVisitTravelersTent( getColorFromTile( tile ) ) ) {
             AudioManager::PlaySound( M82::EXPERNCE );
 
             Dialog::Message(
@@ -3424,7 +3445,7 @@ namespace
         const Maps::Tiles & tile = world.GetTiles( dst_index );
         Kingdom & kingdom = hero.GetKingdom();
 
-        kingdom.SetVisitTravelersTent( tile.QuantityColor() );
+        kingdom.SetVisitTravelersTent( getColorFromTile( tile ) );
 
         DEBUG_LOG( DBG_GAME, DBG_INFO, hero.GetName() )
     }

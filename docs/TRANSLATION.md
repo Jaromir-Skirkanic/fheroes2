@@ -25,6 +25,7 @@ subdirectory of the project source tree. The current instruction is designed for
 ![Swedish](https://img.shields.io/endpoint?url=https://ihhub.github.io/fheroes2/json/lang_sv.json)
 ![Turkish](https://img.shields.io/endpoint?url=https://ihhub.github.io/fheroes2/json/lang_tr.json)
 ![Ukrainian](https://img.shields.io/endpoint?url=https://ihhub.github.io/fheroes2/json/lang_uk.json)
+![Vietnamese](https://img.shields.io/endpoint?url=https://ihhub.github.io/fheroes2/json/lang_vi.json)
 
 ## Finding translatable strings in the codebase
 
@@ -61,7 +62,7 @@ same PR page, further slowing down the process of reviewing it.
 Furthermore, we have decided on a minimum amount of 15 changed strings for a translation PR. For languages that have translations that are more
 or less complete, less than this amount can be accepted.
 
-Preferrably a PR should contain a small amount of changes, about 100 lines, all focused on translating a specific part of the game - for
+Preferably a PR should contain a small amount of changes, about 100 lines, all focused on translating a specific part of the game - for
 example creature names or castle buildings.
 
 ## Build binary translation files
@@ -76,8 +77,10 @@ make de.mo
 
 To have this MO file used by the engine, it should then be placed in the `files/lang` folder used by the fheroes2 executable.
 The exact location of this folder depends on the operating system. On Windows, it is usually located in the app installation
-directory. On Linux, it is usually located in the `/usr/share/fheroes2` or `/usr/local/share/fheroes2`. Currently for MacOS
-users this location is dependent on what third-party package manager is used to install fheroes2.
+directory. On Linux, it is usually located in the `/usr/share/fheroes2` or `/usr/local/share/fheroes2`. Currently for MacOS 
+users this location is dependent on what third-party package manager is used to install fheroes2. The Flatpak version of the 
+fheroes2 installation from Flathub is located in the `usr/.var/app/io.github.ihhub.Fheroes2` directory.
+
 
 For Windows users who use POEdit or a similar application, it is possible to compile the MO file using such a program. However, note that
 the program will need to be set to compile the MO file in the font encoding/Charset that the language that you are translating to has been

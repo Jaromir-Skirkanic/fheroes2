@@ -21,6 +21,8 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#include "kingdom.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -42,11 +44,11 @@
 #include "game_interface.h"
 #include "game_static.h"
 #include "interface_icons.h"
-#include "kingdom.h"
 #include "logging.h"
 #include "maps.h"
 #include "maps_fileinfo.h"
 #include "maps_tiles.h"
+#include "maps_tiles_helper.h"
 #include "math_base.h"
 #include "payment.h"
 #include "players.h"
@@ -236,7 +238,10 @@ void Kingdom::ActionNewDay()
 
     // Reset the effect of the "Identify Hero" spell
     ResetModes( IDENTIFYHERO );
+}
 
+void Kingdom::ActionNewDayResourceUpdate( const std::function<void( const EventDate & event, const Funds & funds )> & displayEventDialog )
+{
     // Skip the income for the first day
     if ( world.CountDay() > 1 ) {
         AddFundsResource( GetIncome() );
@@ -258,7 +263,10 @@ void Kingdom::ActionNewDay()
     // Resources from events
     const EventsDate events = world.GetEventsDate( GetColor() );
     for ( const EventDate & event : events ) {
-        AddFundsResource( event.resource );
+        const Funds fundsUpdate = Resource::CalculateEventResourceUpdate( GetFunds(), event.resource );
+        AddFundsResource( fundsUpdate );
+        if ( displayEventDialog )
+            displayEventDialog( event, fundsUpdate );
     }
 }
 
@@ -459,7 +467,7 @@ bool Kingdom::isValidKingdomObject( const Maps::Tiles & tile, const MP2::MapObje
 
     // Check castle first to ignore guest hero (tile with both Castle and Hero)
     if ( tile.GetObject( false ) == MP2::OBJ_CASTLE ) {
-        const int tileColor = tile.QuantityColor();
+        const int tileColor = getColorFromTile( tile );
 
         // Castle can only be visited if it either belongs to this kingdom or is an enemy castle (in the latter case, an attack may occur)
         return color == tileColor || !Players::isFriends( color, tileColor );
@@ -474,10 +482,10 @@ bool Kingdom::isValidKingdomObject( const Maps::Tiles & tile, const MP2::MapObje
     }
 
     if ( MP2::isCaptureObject( objectType ) )
-        return !Players::isFriends( color, tile.QuantityColor() );
+        return !Players::isFriends( color, getColorFromTile( tile ) );
 
     if ( MP2::isQuantityObject( objectType ) )
-        return tile.QuantityIsValid();
+        return doesTileContainValuableItems( tile );
 
     return true;
 }
@@ -601,7 +609,7 @@ void Kingdom::ApplyPlayWithStartingHero()
 
             if ( patrol ) {
                 hero->SetModes( Heroes::PATROL );
-                hero->SetCenterPatrol( cp );
+                hero->SetPatrolCenter( cp );
             }
             foundHeroes = true;
         }

@@ -53,6 +53,7 @@
 #include "maps.h"
 #include "maps_objects.h"
 #include "maps_tiles.h"
+#include "maps_tiles_helper.h"
 #include "math_base.h"
 #include "monster.h"
 #include "mp2.h"
@@ -71,7 +72,6 @@
 #include "spell_info.h"
 #include "translations.h"
 #include "ui_dialog.h"
-#include "ui_text.h"
 #include "visit.h"
 #include "world.h"
 
@@ -107,19 +107,25 @@ namespace
             return false;
         }
 
-        if ( colors == 0 )
+        if ( colors == 0 ) {
             return false;
+        }
 
         const int32_t indexFrom = hero.GetIndex();
-        if ( !Maps::isValidAbsIndex( indexFrom ) )
+        if ( !Maps::isValidAbsIndex( indexFrom ) ) {
             return false;
+        }
 
-        if ( !world.GetTiles( indexFrom ).isFog( colors ) )
+        // Show AI hero animation if he is visible (or barely visible) for human player.
+        if ( world.GetTiles( indexFrom ).getFogDirection() != DIRECTION_ALL ) {
             return true;
+        }
 
         const Route::Path & path = hero.GetPath();
-        if ( path.isValid() && world.GetTiles( path.front().GetIndex() ).GetFogDirections( colors ) != DIRECTION_ALL )
+        // Show AI hero animation if any of the tiles next to the first tile in the path is visible for human player.
+        if ( path.isValid() && ( world.GetTiles( path.front().GetIndex() ).getFogDirection() != DIRECTION_ALL ) ) {
             return true;
+        }
 
         return false;
     }
@@ -202,7 +208,7 @@ namespace
             return true;
         }
 
-        if ( troop.GetStrength() < hero.getAIMininumJoiningArmyStrength() ) {
+        if ( troop.GetStrength() < hero.getAIMinimumJoiningArmyStrength() ) {
             // No use to hire such a weak troop.
             return false;
         }
@@ -412,7 +418,7 @@ namespace
     {
         bool destroy = false;
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        Troop troop = tile.QuantityTroop();
+        Troop troop = getTroopFromTile( tile );
 
         const NeutralMonsterJoiningCondition join = Army::GetJoinSolution( hero, tile, troop );
 
@@ -487,7 +493,7 @@ namespace
 #endif
 
                 if ( monstersLeft > 0 ) {
-                    tile.MonsterSetCount( monstersLeft );
+                    setMonsterCountOnTile( tile, monstersLeft );
 
                     if ( Maps::isMonsterOnTileJoinConditionFree( tile ) ) {
                         Maps::setMonsterOnTileJoinCondition( tile, Monster::JOIN_CONDITION_MONEY );
@@ -501,7 +507,7 @@ namespace
 
         if ( destroy ) {
             tile.RemoveObjectSprite();
-            tile.MonsterSetCount( 0 );
+            setMonsterCountOnTile( tile, 0 );
             tile.setAsEmpty();
         }
     }
@@ -511,10 +517,10 @@ namespace
         Maps::Tiles & tile = world.GetTiles( dst_index );
 
         if ( objectType != MP2::OBJ_BOTTLE )
-            hero.GetKingdom().AddFundsResource( tile.QuantityFunds() );
+            hero.GetKingdom().AddFundsResource( getFundsFromTile( tile ) );
 
         tile.RemoveObjectSprite();
-        tile.QuantityReset();
+        resetObjectInfoOnTile( tile );
         hero.GetPath().Reset();
 
         DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() << " pickup small resource" )
@@ -523,20 +529,20 @@ namespace
     void AIToTreasureChest( Heroes & hero, const MP2::MapObjectType objectType, int32_t dst_index )
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        uint32_t gold = tile.QuantityGold();
+        uint32_t gold = getGoldAmountFromTile( tile );
 
         Kingdom & kingdom = hero.GetKingdom();
 
         if ( tile.isWater() ) {
             if ( gold ) {
-                const Artifact & art = tile.QuantityArtifact();
+                const Artifact & art = getArtifactFromTile( tile );
 
                 if ( art.isValid() && !hero.PickupArtifact( art ) )
                     gold = GoldInsteadArtifact( objectType );
             }
         }
         else {
-            const Artifact & art = tile.QuantityArtifact();
+            const Artifact & art = getArtifactFromTile( tile );
 
             if ( gold ) {
                 const uint32_t experience = gold > 500 ? gold - 500 : 500;
@@ -590,7 +596,7 @@ namespace
         }
 
         tile.RemoveObjectSprite();
-        tile.QuantityReset();
+        resetObjectInfoOnTile( tile );
 
         DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() )
     }
@@ -599,22 +605,16 @@ namespace
     {
         Maps::Tiles & tile = world.GetTiles( dstIndex );
 
-        if ( !hero.isFriends( tile.QuantityColor() ) ) {
-            auto removeObjectProtection = [&hero, objectType, &tile]() {
+        if ( !hero.isFriends( getColorFromTile( tile ) ) ) {
+            auto removeObjectProtection = [&tile]() {
                 // Clear any metadata related to spells
                 tile.clearAdditionalMetadata();
-
-                // Restore the abandoned mine
-                if ( objectType == MP2::OBJ_ABANDONED_MINE ) {
-                    Maps::Tiles::UpdateAbandonedMineSprite( tile );
-                    hero.SetMapsObject( MP2::OBJ_MINES );
-                }
             };
 
             auto captureObject = [&hero, &tile, &removeObjectProtection]() {
                 removeObjectProtection();
 
-                tile.QuantitySetColor( hero.GetColor() );
+                setColorOnTile( tile, hero.GetColor() );
             };
 
             if ( tile.isCaptureObjectProtected() ) {
@@ -630,7 +630,7 @@ namespace
                 else {
                     // The army should include only the original monsters
                     const uint32_t monstersLeft = army.getTotalCount();
-                    assert( monstersLeft == army.GetCountMonsters( tile.QuantityMonster() ) );
+                    assert( monstersLeft == army.GetCountMonsters( getMonsterFromTile( tile ) ) );
 
                     Troop & troop = world.GetCapturedObject( dstIndex ).GetTroop();
                     troop.SetCount( monstersLeft );
@@ -649,13 +649,17 @@ namespace
             }
         }
 
+#ifndef WITH_DEBUG
+        (void)objectType;
+#endif
+
         DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() << " object: " << MP2::StringObject( objectType ) )
     }
 
     void AIToObjectResource( Heroes & hero, const MP2::MapObjectType objectType, int32_t dst_index )
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        const ResourceCount & rc = tile.QuantityResourceCount();
+        const ResourceCount & rc = getResourcesFromTile( tile );
 
         if ( rc.isValid() )
             hero.GetKingdom().AddFundsResource( Funds( rc ) );
@@ -663,7 +667,7 @@ namespace
         if ( MP2::isCaptureObject( objectType ) )
             AIToCaptureObject( hero, objectType, dst_index );
 
-        tile.QuantityReset();
+        resetObjectInfoOnTile( tile );
         hero.setVisitedForAllies( dst_index );
 
         DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() )
@@ -674,15 +678,15 @@ namespace
         Maps::Tiles & tile = world.GetTiles( dst_index );
 
         // artifact
-        if ( tile.QuantityIsValid() ) {
-            const Artifact & art = tile.QuantityArtifact();
+        if ( doesTileContainValuableItems( tile ) ) {
+            const Artifact & art = getArtifactFromTile( tile );
 
             if ( !hero.PickupArtifact( art ) ) {
                 uint32_t gold = GoldInsteadArtifact( objectType );
                 hero.GetKingdom().AddFundsResource( Funds( Resource::GOLD, gold ) );
             }
 
-            tile.QuantityReset();
+            resetObjectInfoOnTile( tile );
         }
 
         hero.SetVisitedWideTile( dst_index, objectType, Visit::GLOBAL );
@@ -694,15 +698,15 @@ namespace
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
 
-        if ( tile.QuantityIsValid() ) {
-            const Artifact & art = tile.QuantityArtifact();
+        if ( doesTileContainValuableItems( tile ) ) {
+            const Artifact & art = getArtifactFromTile( tile );
 
             if ( art.isValid() )
                 hero.PickupArtifact( art );
             else
-                hero.GetKingdom().AddFundsResource( tile.QuantityFunds() );
+                hero.GetKingdom().AddFundsResource( getFundsFromTile( tile ) );
 
-            tile.QuantityReset();
+            resetObjectInfoOnTile( tile );
         }
 
         hero.SetVisited( dst_index, Visit::GLOBAL );
@@ -714,9 +718,9 @@ namespace
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
 
-        hero.GetKingdom().AddFundsResource( tile.QuantityFunds() );
+        hero.GetKingdom().AddFundsResource( getFundsFromTile( tile ) );
         tile.RemoveObjectSprite();
-        tile.QuantityReset();
+        resetObjectInfoOnTile( tile );
 
         DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() )
     }
@@ -743,6 +747,12 @@ namespace
             hero.SetVisited( dst_index, Visit::GLOBAL );
             hero.setVisitedForAllies( dst_index );
             world.ActionForMagellanMaps( hero.GetColor() );
+
+            if ( Players::isFriends( hero.GetColor(), Players::HumanColors() ) ) {
+                // Fully update fog directions if AI player is an ally.
+                Interface::GameArea::updateMapFogDirections();
+            }
+
             kingdom.OddFundsResource( payment );
         }
 
@@ -762,6 +772,8 @@ namespace
         assert( world.GetTiles( indexTo ).GetObject() != MP2::OBJ_HEROES );
 
         if ( AIHeroesShowAnimation( hero, AIGetAllianceColors() ) ) {
+            // AI-controlled hero cannot activate Stone Liths from the same tile, but should move to this tile from some
+            // other tile first, so there is no need to re-center the game area on the hero before his disappearance
             hero.FadeOut();
         }
 
@@ -824,6 +836,8 @@ namespace
         }
 
         if ( AIHeroesShowAnimation( hero, AIGetAllianceColors() ) ) {
+            // AI-controlled hero cannot activate Whirlpool from the same tile, but should move to this tile from some
+            // other tile first, so there is no need to re-center the game area on the hero before his disappearance
             hero.FadeOut();
         }
 
@@ -905,7 +919,7 @@ namespace
 
     void AIToWitchsHut( Heroes & hero, int32_t dst_index )
     {
-        const Skill::Secondary & skill = world.GetTiles( dst_index ).QuantitySkill();
+        const Skill::Secondary & skill = getSecondarySkillFromTile( world.GetTiles( dst_index ) );
 
         // check full
         if ( skill.isValid() && !hero.HasMaxSecondarySkill() && !hero.HasSecondarySkill( skill.Skill() ) )
@@ -917,16 +931,12 @@ namespace
 
     void AIToShrine( Heroes & hero, int32_t dst_index )
     {
-        const Spell & spell = world.GetTiles( dst_index ).QuantitySpell();
-        const uint32_t spell_level = spell.Level();
+        const Spell & spell = getSpellFromTile( world.GetTiles( dst_index ) );
+        assert( spell.isValid() );
 
-        if ( spell.isValid() &&
-             // check spell book
-             hero.HaveSpellBook() &&
-             // check present spell (skip bag artifacts)
-             !hero.HaveSpell( spell, true ) &&
+        if ( hero.HaveSpellBook() && !hero.HaveSpell( spell, true ) &&
              // check valid level spell and wisdom skill
-             !( 3 == spell_level && Skill::Level::NONE == hero.GetLevelSkill( Skill::Secondary::WISDOM ) ) ) {
+             !( 3 == spell.Level() && Skill::Level::NONE == hero.GetLevelSkill( Skill::Secondary::WISDOM ) ) ) {
             hero.AppendSpellToBook( spell );
         }
 
@@ -1064,7 +1074,7 @@ namespace
     void AIToPoorMoraleObject( Heroes & hero, const MP2::MapObjectType objectType, int32_t dst_index )
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        uint32_t gold = tile.QuantityGold();
+        uint32_t gold = getGoldAmountFromTile( tile );
         bool complete = false;
 
         if ( gold ) {
@@ -1074,7 +1084,7 @@ namespace
             if ( res.AttackerWins() ) {
                 hero.IncreaseExperience( res.GetExperienceAttacker() );
                 complete = true;
-                const Artifact & art = tile.QuantityArtifact();
+                const Artifact & art = getArtifactFromTile( tile );
 
                 if ( art.isValid() && !hero.PickupArtifact( art ) )
                     gold = GoldInsteadArtifact( objectType );
@@ -1087,7 +1097,7 @@ namespace
         }
 
         if ( complete )
-            tile.QuantityReset();
+            resetObjectInfoOnTile( tile );
         else if ( 0 == gold && !hero.isObjectTypeVisited( objectType ) ) {
             // modify morale
             hero.SetVisited( dst_index );
@@ -1100,7 +1110,7 @@ namespace
     void AIToPyramid( Heroes & hero, int32_t dst_index )
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        const Spell & spell = tile.QuantitySpell();
+        const Spell & spell = getSpellFromTile( tile );
 
         if ( spell.isValid() ) {
             // battle
@@ -1118,7 +1128,7 @@ namespace
                     hero.AppendSpellToBook( spell );
                 }
 
-                tile.QuantityReset();
+                resetObjectInfoOnTile( tile );
                 hero.SetVisited( dst_index, Visit::GLOBAL );
             }
             else {
@@ -1152,7 +1162,7 @@ namespace
         const Maps::Tiles & tile = world.GetTiles( dst_index );
 
         if ( !hero.isVisited( tile ) ) {
-            const Funds & funds = tile.QuantityFunds();
+            const Funds & funds = getFundsFromTile( tile );
 
             if ( 0 == funds.GetValidItemsCount() || hero.GetKingdom().AllowPayment( funds ) ) {
                 const int level = hero.GetLevel();
@@ -1172,7 +1182,7 @@ namespace
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
 
-        if ( tile.QuantityIsValid() ) {
+        if ( doesTileContainValuableItems( tile ) ) {
             Army army( tile );
 
             Battle::Result res = Battle::Loader( hero.GetArmy(), army, dst_index );
@@ -1184,7 +1194,7 @@ namespace
                 AIBattleLose( hero, res, true );
             }
 
-            tile.QuantityReset();
+            resetObjectInfoOnTile( tile );
         }
 
         DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() )
@@ -1193,7 +1203,7 @@ namespace
     void AIToDwellingJoinMonster( Heroes & hero, int32_t dst_index )
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        const Troop & troop = tile.QuantityTroop();
+        const Troop & troop = getTroopFromTile( tile );
         if ( !troop.isValid() ) {
             return;
         }
@@ -1208,7 +1218,7 @@ namespace
             return;
         }
 
-        tile.MonsterSetCount( 0 );
+        setMonsterCountOnTile( tile, 0 );
 
         DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() )
     }
@@ -1216,7 +1226,7 @@ namespace
     void AIToDwellingRecruitMonster( Heroes & hero, const MP2::MapObjectType objectType, int32_t dst_index )
     {
         Maps::Tiles & tile = world.GetTiles( dst_index );
-        const Troop & troop = tile.QuantityTroop();
+        const Troop & troop = getTroopFromTile( tile );
         if ( !troop.isValid() ) {
             return;
         }
@@ -1247,7 +1257,7 @@ namespace
             return;
         }
 
-        tile.MonsterSetCount( availableTroopCount - recruitTroopCount );
+        setMonsterCountOnTile( tile, availableTroopCount - recruitTroopCount );
         kingdom.OddFundsResource( troopToHire.GetTotalCost() );
 
         // Remove genie lamp sprite if no genies are available to hire.
@@ -1264,14 +1274,14 @@ namespace
         Maps::Tiles & tile = world.GetTiles( tileIndex );
         bool recruitmentAllowed = true;
 
-        if ( tile.QuantityColor() == Color::NONE ) {
+        if ( getColorFromTile( tile ) == Color::NONE ) {
             Army army( tile );
 
             const Battle::Result res = Battle::Loader( hero.GetArmy(), army, tileIndex );
             if ( res.AttackerWins() ) {
                 hero.IncreaseExperience( res.GetExperienceAttacker() );
 
-                tile.QuantitySetColor( hero.GetColor() );
+                setColorOnTile( tile, hero.GetColor() );
                 tile.SetObjectPassable( true );
             }
             else {
@@ -1282,7 +1292,7 @@ namespace
         }
 
         if ( recruitmentAllowed ) {
-            const Troop troop = tile.QuantityTroop();
+            const Troop troop = getTroopFromTile( tile );
 
             if ( troop.isValid() ) {
                 AIToDwellingRecruitMonster( hero, objectType, tileIndex );
@@ -1308,9 +1318,26 @@ namespace
         DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() )
     }
 
-    void AIToAbandonedMine( Heroes & hero, const MP2::MapObjectType objectType, int32_t dst_index )
+    void AIToAbandonedMine( Heroes & hero, const int32_t dstIndex )
     {
-        AIToCaptureObject( hero, objectType, dst_index );
+        Maps::Tiles & tile = world.GetTiles( dstIndex );
+
+        Army army( tile );
+
+        Battle::Result result = Battle::Loader( hero.GetArmy(), army, dstIndex );
+
+        if ( result.AttackerWins() ) {
+            hero.IncreaseExperience( result.GetExperienceAttacker() );
+
+            Maps::Tiles::RestoreAbandonedMine( tile, Resource::GOLD );
+            hero.SetMapsObject( MP2::OBJ_MINES );
+            setColorOnTile( tile, hero.GetColor() );
+        }
+        else {
+            AIBattleLose( hero, result, true );
+        }
+
+        DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() )
     }
 
     void AIToBarrier( const Heroes & hero, int32_t dst_index )
@@ -1318,7 +1345,7 @@ namespace
         Maps::Tiles & tile = world.GetTiles( dst_index );
         const Kingdom & kingdom = hero.GetKingdom();
 
-        if ( kingdom.IsVisitTravelersTent( tile.QuantityColor() ) ) {
+        if ( kingdom.IsVisitTravelersTent( getColorFromTile( tile ) ) ) {
             tile.RemoveObjectSprite();
             tile.setAsEmpty();
         }
@@ -1331,7 +1358,7 @@ namespace
         const Maps::Tiles & tile = world.GetTiles( dst_index );
         Kingdom & kingdom = hero.GetKingdom();
 
-        kingdom.SetVisitTravelersTent( tile.QuantityColor() );
+        kingdom.SetVisitTravelersTent( getColorFromTile( tile ) );
 
         DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() )
     }
@@ -1343,10 +1370,10 @@ namespace
         if ( hero.IsFullBagArtifacts() )
             hero.GetKingdom().AddFundsResource( Funds( Resource::GOLD, GoldInsteadArtifact( objectType ) ) );
         else
-            hero.PickupArtifact( tile.QuantityArtifact() );
+            hero.PickupArtifact( getArtifactFromTile( tile ) );
 
         tile.RemoveObjectSprite();
-        tile.QuantityReset();
+        resetObjectInfoOnTile( tile );
 
         DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() )
     }
@@ -1357,13 +1384,13 @@ namespace
 
         if ( !hero.IsFullBagArtifacts() ) {
             uint32_t cond = tile.QuantityVariant();
-            Artifact art = tile.QuantityArtifact();
+            Artifact art = getArtifactFromTile( tile );
 
             bool result = false;
 
             // 1,2,3 - gold, gold + res
             if ( 0 < cond && cond < 4 ) {
-                Funds payment = tile.QuantityFunds();
+                const Funds payment = getFundsFromTile( tile );
 
                 if ( hero.GetKingdom().AllowPayment( payment ) ) {
                     result = true;
@@ -1394,33 +1421,24 @@ namespace
 
             if ( result && hero.PickupArtifact( art ) ) {
                 tile.RemoveObjectSprite();
-                tile.QuantityReset();
+                resetObjectInfoOnTile( tile );
             }
         }
 
         DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() )
     }
 
-    void AIToBoat( Heroes & hero, int32_t dst_index )
+    void AIToBoat( Heroes & hero, const int32_t dst_index )
     {
         if ( hero.isShipMaster() )
             return;
 
-        const int32_t from_index = hero.GetIndex();
+        hero.setLastGroundRegion( world.GetTiles( hero.GetIndex() ).GetRegion() );
 
-        // disabled nearest coasts (on week MP2::isWeekLife)
-        MapsIndexes coasts = Maps::ScanAroundObjectWithDistance( from_index, 4, MP2::OBJ_COAST );
-        coasts.push_back( from_index );
-
-        for ( MapsIndexes::const_iterator it = coasts.begin(); it != coasts.end(); ++it )
-            hero.SetVisited( *it );
-
-        hero.setLastGroundRegion( world.GetTiles( from_index ).GetRegion() );
-
-        const fheroes2::Point & destPos = Maps::GetPoint( dst_index );
-        const fheroes2::Point offset( destPos - hero.GetCenter() );
+        const fheroes2::Point offset( Maps::GetPoint( dst_index ) - hero.GetCenter() );
 
         if ( AIHeroesShowAnimation( hero, AIGetAllianceColors() ) ) {
+            Interface::Basic::Get().GetGameArea().SetCenter( hero.GetCenter() );
             hero.FadeOut( offset );
         }
 
@@ -1430,9 +1448,6 @@ namespace
         hero.SetMapsObject( MP2::OBJ_NONE );
         world.GetTiles( dst_index ).resetObjectSprite();
         hero.SetShipMaster( true );
-        if ( AIHeroesShowAnimation( hero, AIGetAllianceColors() ) ) {
-            Interface::Basic::Get().GetGameArea().SetCenter( hero.GetCenter() );
-        }
         hero.GetPath().Reset();
 
         AI::Get().HeroesClearTask( hero );
@@ -1442,7 +1457,7 @@ namespace
         DEBUG_LOG( DBG_AI, DBG_INFO, hero.GetName() )
     }
 
-    void AIToCoast( Heroes & hero, int32_t dst_index )
+    void AIToCoast( Heroes & hero, const int32_t dst_index )
     {
         if ( !hero.isShipMaster() )
             return;
@@ -1451,8 +1466,8 @@ namespace
         Maps::Tiles & from = world.GetTiles( fromIndex );
 
         // Calculate the offset before making the action.
-        const fheroes2::Point & prevPosition = Maps::GetPoint( dst_index );
-        const fheroes2::Point offset( prevPosition - hero.GetCenter() );
+        const fheroes2::Point prevPos = hero.GetCenter();
+        const fheroes2::Point offset( Maps::GetPoint( dst_index ) - prevPos );
 
         hero.ResetMovePoints();
         hero.Move2Dest( dst_index );
@@ -1461,9 +1476,10 @@ namespace
         hero.GetPath().Reset();
 
         if ( AIHeroesShowAnimation( hero, AIGetAllianceColors() ) ) {
-            Interface::Basic::Get().GetGameArea().SetCenter( prevPosition );
-            hero.FadeIn( { offset.x * Game::AIHeroAnimSkip(), offset.y * Game::AIHeroAnimSkip() } );
+            Interface::Basic::Get().GetGameArea().SetCenter( prevPos );
+            hero.FadeIn( offset );
         }
+
         hero.ActionNewPosition( true );
 
         AI::Get().HeroesClearTask( hero );
@@ -1609,8 +1625,9 @@ namespace AI
         case MP2::OBJ_LIGHTHOUSE:
             AIToCaptureObject( hero, objectType, dst_index );
             break;
+
         case MP2::OBJ_ABANDONED_MINE:
-            AIToAbandonedMine( hero, objectType, dst_index );
+            AIToAbandonedMine( hero, dst_index );
             break;
 
         case MP2::OBJ_SHIPWRECK_SURVIVOR:
@@ -1839,10 +1856,9 @@ namespace AI
             while ( le.HandleEvents( !hideAIMovements && Game::isDelayNeeded( delayTypes ) ) ) {
 #if defined( WITH_DEBUG )
                 if ( HotKeyPressEvent( Game::HotKeyEvent::WORLD_TRANSFER_CONTROL_TO_AI ) && Players::Get( hero.GetColor() )->isAIAutoControlMode() ) {
-                    if ( fheroes2::showMessage( fheroes2::Text( _( "Warning" ), fheroes2::FontType::normalYellow() ),
-                                                fheroes2::Text( _( "Do you want to regain control from AI? The effect will take place only on the next turn." ),
-                                                                fheroes2::FontType::normalWhite() ),
-                                                Dialog::YES | Dialog::NO )
+                    if ( fheroes2::showStandardTextMessage( _( "Warning" ),
+                                                            _( "Do you want to regain control from AI? The effect will take place only on the next turn." ),
+                                                            Dialog::YES | Dialog::NO )
                          == Dialog::YES ) {
                         Players::Get( hero.GetColor() )->setAIAutoControlMode( false );
                         continue;
@@ -1965,10 +1981,25 @@ namespace AI
 
         const Spell dimensionDoor( Spell::DIMENSIONDOOR );
         if ( !hero.CanCastSpell( dimensionDoor ) ) {
+            // How is it even possible to call this function if the hero does not have this spell?
+            assert( 0 );
             return;
         }
 
+#if defined( WITH_DEBUG )
+        if ( Players::Get( hero.GetColor() )->isAIAutoControlMode() ) {
+            LocalEvent::Get().HandleEvents( false );
+            if ( HotKeyPressEvent( Game::HotKeyEvent::WORLD_TRANSFER_CONTROL_TO_AI )
+                 && fheroes2::showStandardTextMessage( _( "Warning" ), _( "Do you want to regain control from AI? The effect will take place only on the next turn." ),
+                                                       Dialog::YES | Dialog::NO )
+                        == Dialog::YES ) {
+                Players::Get( hero.GetColor() )->setAIAutoControlMode( false );
+            }
+        }
+#endif
+
         if ( AIHeroesShowAnimation( hero, AIGetAllianceColors() ) ) {
+            Interface::Basic::Get().GetGameArea().SetCenter( hero.GetCenter() );
             hero.FadeOut();
         }
 
@@ -2004,6 +2035,7 @@ namespace AI
         }
 
         if ( AIHeroesShowAnimation( hero, AIGetAllianceColors() ) ) {
+            Interface::Basic::Get().GetGameArea().SetCenter( hero.GetCenter() );
             hero.FadeOut();
         }
 

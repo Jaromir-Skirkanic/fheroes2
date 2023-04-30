@@ -52,6 +52,7 @@
 #include "m82.h"
 #include "maps.h"
 #include "maps_tiles.h"
+#include "maps_tiles_helper.h"
 #include "math_base.h"
 #include "monster.h"
 #include "mp2.h"
@@ -534,7 +535,7 @@ namespace
         for ( const int32_t monsterIndex : monsters ) {
             const Maps::Tiles & tile = world.GetTiles( monsterIndex );
 
-            Troop troop = tile.QuantityTroop();
+            const Troop troop = getTroopFromTile( tile );
             const NeutralMonsterJoiningCondition join = Army::GetJoinSolution( hero, tile, troop );
 
             std::string hdr;
@@ -579,7 +580,7 @@ namespace
         return true;
     }
 
-    bool ActionSpellSetGuardian( Heroes & hero, const Spell & spell )
+    bool ActionSpellSetGuardian( const Heroes & hero, const Spell & spell )
     {
         Maps::Tiles & tile = world.GetTiles( hero.GetIndex() );
 
@@ -590,28 +591,27 @@ namespace
 
         const uint32_t count = fheroes2::getGuardianMonsterCount( spell, hero.GetPower(), &hero );
 
-        if ( count ) {
-            Maps::setSpellOnTile( tile, spell.GetID() );
-
-            if ( spell == Spell::HAUNT ) {
-                world.CaptureObject( tile.GetIndex(), Color::NONE );
-                tile.removeOwnershipFlag( MP2::OBJ_MINES );
-                Maps::Tiles::setAbandonedMineObjectType( tile );
-                hero.SetMapsObject( MP2::OBJ_ABANDONED_MINE );
-
-                // Update the color of haunted mine on radar.
-                Interface::Basic & I = Interface::Basic::Get();
-                const fheroes2::Point heroPosition = hero.GetCenter();
-                I.GetRadar().SetRenderArea( { heroPosition.x - 1, heroPosition.y - 1, 3, 2 } );
-
-                I.SetRedraw( Interface::REDRAW_RADAR );
-            }
-
-            world.GetCapturedObject( tile.GetIndex() ).GetTroop().Set( Monster( spell ), count );
-            return true;
+        if ( count == 0 ) {
+            return false;
         }
 
-        return false;
+        Maps::setMineSpellOnTile( tile, spell.GetID() );
+
+        if ( spell == Spell::HAUNT ) {
+            world.CaptureObject( tile.GetIndex(), Color::NONE );
+            tile.removeOwnershipFlag( MP2::OBJ_MINES );
+
+            // Update the color of haunted mine on radar.
+            Interface::Basic & I = Interface::Basic::Get();
+            const fheroes2::Point heroPosition = hero.GetCenter();
+            I.GetRadar().SetRenderArea( { heroPosition.x - 1, heroPosition.y - 1, 3, 2 } );
+
+            I.SetRedraw( Interface::REDRAW_RADAR );
+        }
+
+        world.GetCapturedObject( tile.GetIndex() ).GetTroop().Set( Monster( spell ), count );
+
+        return true;
     }
 }
 

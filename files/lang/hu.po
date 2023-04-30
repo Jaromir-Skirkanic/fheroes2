@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fheroes2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-03-21 03:14+0000\n"
+"POT-Creation-Date: 2023-04-30 17:06+0000\n"
 "PO-Revision-Date: 2022-12-03 03:43+0100\n"
 "Last-Translator: fheroes2 team <fhomm2@gmail.com>\n"
 "Language-Team: Hungarian <hu@li.org>\n"
@@ -49,9 +49,6 @@ msgstr ""
 msgid "CANCEL"
 msgstr ""
 
-msgid "OKAY"
-msgstr ""
-
 msgid "ACCEPT"
 msgstr ""
 
@@ -82,6 +79,14 @@ msgstr ""
 msgid "RESTART"
 msgstr ""
 
+msgid "HEROES"
+msgstr ""
+
+msgid ""
+"TOWNS/\n"
+"CASTLES"
+msgstr ""
+
 msgid "S"
 msgstr ""
 
@@ -95,6 +100,9 @@ msgid "X-L"
 msgstr ""
 
 msgid "ALL"
+msgstr ""
+
+msgid "SELECT"
 msgstr ""
 
 msgid ""
@@ -147,6 +155,9 @@ msgstr ""
 msgid "GIFT"
 msgstr "AJÁNDÉK"
 
+msgid "guildWell|EXIT"
+msgstr ""
+
 msgid "DIFFICULTY"
 msgstr "NEHÉZSÉG"
 
@@ -154,6 +165,9 @@ msgid "MIN"
 msgstr ""
 
 msgid "MAX"
+msgstr ""
+
+msgid "OKAY"
 msgstr ""
 
 msgid "Warrior"
@@ -707,10 +721,11 @@ msgid_plural "%{count} %{defender} perish."
 msgstr[0] "egy %{defender} elpusztult."
 msgstr[1] "%{count} %{defender} elpusztult."
 
-msgid "1 soul is absorbed."
-msgid_plural "%{count} souls are absorbed."
-msgstr[0] ""
-msgstr[1] ""
+#, fuzzy
+msgid "1 soul is incorporated."
+msgid_plural "%{count} souls are incorporated."
+msgstr[0] "A Tükörkép varázslat nem sikerült."
+msgstr[1] "A Tükörkép varázslat nem sikerült."
 
 msgid "1 %{unit} is revived."
 msgid_plural "%{count} %{unit} are revived."
@@ -1184,7 +1199,7 @@ msgid ""
 msgstr ""
 
 msgid ""
-"Eliminate all oposition in this area. Then the first piece of the artifact "
+"Eliminate all opposition in this area. Then the first piece of the artifact "
 "will be yours."
 msgstr ""
 
@@ -2305,7 +2320,8 @@ msgid ""
 "The Crystal Garden increases production of Sprites by %{count} per week."
 msgstr "A Kristály Kert növeli a Tündérek termelődését hetente %{count}-cal."
 
-msgid "The Dungeon increases the income of the town by %{count} / day."
+#, fuzzy
+msgid "The Dungeon increases the income of the town by %{count} gold per day."
 msgstr "A Várbörtön naponta %{count} arannyal növeli a város bevételét."
 
 msgid "The Waterfall increases production of Centaurs by %{count} per week."
@@ -2399,7 +2415,8 @@ msgid ""
 "per week."
 msgstr "A Kút hetente %{count}-vel növeli az összes lény szaporulatát."
 
-msgid "The Statue increases your town's income by %{count} per day."
+#, fuzzy
+msgid "The Statue increases your town's income by %{count} gold per day."
 msgstr "A Szobor naponta %{count}-nel növeli a város bevételét."
 
 msgid "The Left Turret provides extra firepower during castle combat."
@@ -3136,6 +3153,16 @@ msgstr "Kiválasztott Leírás"
 msgid "Click to apply the selected resolution."
 msgstr ""
 
+#, fuzzy
+msgid "Click to apply the entered text."
+msgstr "Kattints a főmenübe való visszatéréshez."
+
+msgid "Click to open the Virtual Keyboard dialog."
+msgstr ""
+
+msgid "Open Virtual Keyboard"
+msgstr ""
+
 msgid "How many troops to move?"
 msgstr "Hány egységet mozgat?"
 
@@ -3526,6 +3553,12 @@ msgstr "Lehetetlen"
 msgid "and more..."
 msgstr ""
 
+msgid "Easy"
+msgstr ""
+
+msgid "Hard"
+msgstr ""
+
 #, fuzzy
 msgid "Campaign Difficulty"
 msgstr "Játék nehézsége"
@@ -3544,10 +3577,24 @@ msgid ""
 "with normal difficulty."
 msgstr ""
 
-msgid "Easy"
+#, fuzzy
+msgid ""
+"Congratulations!\n"
+"\n"
+"Days: %{days}\n"
+msgstr "Gratulálunk!"
+
+msgid ""
+"\n"
+"Difficulty: %{difficulty}\n"
+"\n"
 msgstr ""
 
-msgid "Hard"
+msgid ""
+"Score: %{score}\n"
+"\n"
+"Rating:\n"
+"%{rating}"
 msgstr ""
 
 msgid "Start the selected scenario."
@@ -3752,12 +3799,12 @@ msgstr ""
 msgid "Package Design"
 msgstr ""
 
+msgid "Your Name"
+msgstr ""
+
 #, fuzzy
 msgid "Unknown Hero"
 msgstr "Ismeretlen"
-
-msgid "Your Name"
-msgstr ""
 
 #, fuzzy
 msgid "Standard"
@@ -3774,6 +3821,325 @@ msgstr "Hadjárat"
 #, fuzzy
 msgid "View High Scores for Campaigns."
 msgstr "Dicsőségtábla megjelenítése."
+
+msgid "hotkey|default okay event"
+msgstr ""
+
+msgid "hotkey|default cancel event"
+msgstr ""
+
+msgid "hotkey|default left"
+msgstr ""
+
+msgid "hotkey|default right"
+msgstr ""
+
+msgid "hotkey|default up"
+msgstr ""
+
+msgid "hotkey|default down"
+msgstr ""
+
+msgid "hotkey|toggle fullscreen"
+msgstr ""
+
+msgid "hotkey|toggle text support mode"
+msgstr ""
+
+msgid "hotkey|new game"
+msgstr ""
+
+msgid "hotkey|load game"
+msgstr ""
+
+msgid "hotkey|highscores"
+msgstr ""
+
+msgid "hotkey|credits"
+msgstr ""
+
+#, fuzzy
+msgid "hotkey|standard game"
+msgstr "Szimpla játék"
+
+#, fuzzy
+msgid "hotkey|campaign game"
+msgstr "Hadjárat"
+
+#, fuzzy
+msgid "hotkey|multi-player game"
+msgstr "Többjátékos mód"
+
+#, fuzzy
+msgid "hotkey|settings"
+msgstr "Beállítások"
+
+msgid "hotkey|quit"
+msgstr ""
+
+msgid "hotkey|select map"
+msgstr ""
+
+msgid "hotkey|select small map size"
+msgstr ""
+
+msgid "hotkey|select medium map size"
+msgstr ""
+
+msgid "hotkey|select large map size"
+msgstr ""
+
+msgid "hotkey|select extra large map size"
+msgstr ""
+
+msgid "hotkey|select all map sizes"
+msgstr ""
+
+msgid "hotkey|hotseat game"
+msgstr ""
+
+msgid "hotkey|battle only game"
+msgstr ""
+
+msgid "hotkey|choose the original campaign"
+msgstr ""
+
+msgid "hotkey|choose the expansion campaign"
+msgstr ""
+
+msgid "hotkey|roland campaign"
+msgstr ""
+
+msgid "hotkey|archibald campaign"
+msgstr ""
+
+msgid "hotkey|the price of loyalty campaign"
+msgstr ""
+
+msgid "hotkey|voyage home campaign"
+msgstr ""
+
+msgid "hotkey|wizard's isle campaign"
+msgstr ""
+
+msgid "hotkey|descendants campaign"
+msgstr ""
+
+msgid "hotkey|select first campaign bonus"
+msgstr ""
+
+msgid "hotkey|select second campaign bonus"
+msgstr ""
+
+msgid "hotkey|select third campaign bonus"
+msgstr ""
+
+msgid "hotkey|view campaign intro"
+msgstr ""
+
+#, fuzzy
+msgid "hotkey|select campaign difficulty"
+msgstr "Játék nehézsége"
+
+msgid "hotkey|restart campaign scenario"
+msgstr ""
+
+msgid "hotkey|world map left"
+msgstr ""
+
+msgid "hotkey|world map right"
+msgstr ""
+
+msgid "hotkey|world map up"
+msgstr ""
+
+msgid "hotkey|world map down"
+msgstr ""
+
+msgid "hotkey|world map up left"
+msgstr ""
+
+msgid "hotkey|world map up right"
+msgstr ""
+
+msgid "hotkey|world map down left"
+msgstr ""
+
+msgid "hotkey|world map down right"
+msgstr ""
+
+msgid "hotkey|save game"
+msgstr ""
+
+#, fuzzy
+msgid "hotkey|next hero"
+msgstr "Következő hősök"
+
+#, fuzzy
+msgid "hotkey|continue hero movement"
+msgstr "Mozgás folytatása"
+
+#, fuzzy
+msgid "hotkey|cast adventure spell"
+msgstr "Kalandozó varázslat elsütése."
+
+msgid "hotkey|put hero to sleep"
+msgstr ""
+
+#, fuzzy
+msgid "hotkey|next town"
+msgstr "Következő város mutatása"
+
+msgid "hotkey|end turn"
+msgstr ""
+
+#, fuzzy
+msgid "hotkey|file options"
+msgstr "Fájlbeállítások"
+
+#, fuzzy
+msgid "hotkey|adventure options"
+msgstr "Kaland Opciók"
+
+msgid "hotkey|puzzle map"
+msgstr ""
+
+#, fuzzy
+msgid "hotkey|scenario information"
+msgstr "Laza felállás"
+
+msgid "hotkey|dig for artifact"
+msgstr ""
+
+msgid "hotkey|view world"
+msgstr ""
+
+#, fuzzy
+msgid "hotkey|kingdom summary"
+msgstr "Királyság összesítése"
+
+msgid "hotkey|default action"
+msgstr ""
+
+msgid "hotkey|open focus"
+msgstr ""
+
+#, fuzzy
+msgid "hotkey|system options"
+msgstr "Rendszerbeállítások testreszabása"
+
+msgid "hotkey|scroll left"
+msgstr ""
+
+msgid "hotkey|scroll right"
+msgstr ""
+
+msgid "hotkey|scroll up"
+msgstr ""
+
+msgid "hotkey|scroll down"
+msgstr ""
+
+msgid "hotkey|toggle control panel"
+msgstr ""
+
+msgid "hotkey|toggle radar"
+msgstr ""
+
+msgid "hotkey|toggle buttons"
+msgstr ""
+
+msgid "hotkey|toggle status"
+msgstr ""
+
+msgid "hotkey|toggle icons"
+msgstr ""
+
+msgid "hotkey|transfer control to ai"
+msgstr ""
+
+msgid "hotkey|retreat from battle"
+msgstr ""
+
+msgid "hotkey|surrender during battle"
+msgstr ""
+
+msgid "hotkey|toggle battle auto mode"
+msgstr ""
+
+#, fuzzy
+msgid "hotkey|finish the battle in auto mode"
+msgstr "Biztos vagy benne hogy feloszlatod ezt a sereget?"
+
+#, fuzzy
+msgid "hotkey|battle options"
+msgstr "Kastély beállítások"
+
+msgid "hotkey|skip turn in battle"
+msgstr ""
+
+msgid "hotkey|cast battle spell"
+msgstr ""
+
+msgid "hotkey|dwelling level 1"
+msgstr ""
+
+msgid "hotkey|dwelling level 2"
+msgstr ""
+
+msgid "hotkey|dwelling level 3"
+msgstr ""
+
+msgid "hotkey|dwelling level 4"
+msgstr ""
+
+msgid "hotkey|dwelling level 5"
+msgstr ""
+
+msgid "hotkey|dwelling level 6"
+msgstr ""
+
+msgid "hotkey|well"
+msgstr ""
+
+#, fuzzy
+msgid "hotkey|marketplace"
+msgstr "Piactér"
+
+msgid "hotkey|mage guild"
+msgstr ""
+
+#, fuzzy
+msgid "hotkey|shipyard"
+msgstr "Hajógyár"
+
+#, fuzzy
+msgid "hotkey|thieves guild"
+msgstr "Tolvajcéh"
+
+msgid "hotkey|tavern"
+msgstr ""
+
+msgid "hotkey|construction screen"
+msgstr ""
+
+msgid "hotkey|buy all monsters in well"
+msgstr ""
+
+msgid "hotkey|split stack by half"
+msgstr ""
+
+msgid "hotkey|split stack by one"
+msgstr ""
+
+msgid "hotkey|join stacks"
+msgstr ""
+
+msgid "hotkey|upgrade troop"
+msgstr ""
+
+msgid "hotkey|dismiss troop"
+msgstr ""
 
 #, fuzzy
 msgid "The save file is corrupted."
@@ -4043,6 +4409,15 @@ msgstr ""
 "Nem tudtad időben teljesíteni a küldetésed.\n"
 "Minden elveszett."
 
+msgid "Defeat!"
+msgstr ""
+
+msgid ""
+"Base score: %{score}\n"
+"Difficulty: %{difficulty}\n"
+"\n"
+msgstr ""
+
 #, fuzzy
 msgid "Defeat all enemy heroes and capture all enemy towns and castles."
 msgstr "Az ellenfelek összes hősének és városának elpusztítása."
@@ -4105,6 +4480,9 @@ msgstr ""
 #, fuzzy
 msgid "%{color} player has been vanquished!"
 msgstr "%{color} kiesett!"
+
+msgid "Major Event!"
+msgstr ""
 
 msgid "Scenario:"
 msgstr "Küldetés:"
@@ -4182,6 +4560,12 @@ msgstr " Minden populáció megfeleződött."
 msgid " All dwellings increase population."
 msgstr " Mindegyik toborzóhelynek nőtt a termelése."
 
+msgid "New Week!"
+msgstr ""
+
+msgid "Beware!"
+msgstr ""
+
 msgid ""
 "%{color} player, this is your last day to capture a town, or you will be "
 "banished from this land."
@@ -4216,6 +4600,69 @@ msgid ""
 "%{color} player, your heroes abandon you, and you are banished from this "
 "land."
 msgstr "%{color} játékos, a hőseid elhagytak és száműztek erről a földről."
+
+msgid "Lord Kilburn"
+msgstr "Lord Kilburn"
+
+msgid "Tsabu"
+msgstr "Tsabu"
+
+#, fuzzy
+msgid "Sir Galant"
+msgstr "Sir Gallanth"
+
+msgid "Thundax"
+msgstr "Thundax"
+
+#, fuzzy
+msgid "Lord Haart"
+msgstr "Lord Halton"
+
+msgid "Ariel"
+msgstr "Ariel"
+
+msgid "Rebecca"
+msgstr "Rebecca"
+
+msgid "Sandro"
+msgstr "Sandro"
+
+msgid "Crodo"
+msgstr "Crodo"
+
+#, fuzzy
+msgid "Barock"
+msgstr "Barok"
+
+msgid "Antoine"
+msgstr ""
+
+msgid "Astra"
+msgstr "Astra"
+
+msgid "Agar"
+msgstr "Agar"
+
+msgid "Vatawna"
+msgstr "Vatawna"
+
+msgid "Vesper"
+msgstr "Vesper"
+
+msgid "Ambrose"
+msgstr "Ambrose"
+
+msgid "Troyan"
+msgstr "Troyan"
+
+msgid "Jojosh"
+msgstr "Jojosh"
+
+msgid "Wrathmont"
+msgstr "Wrathmont"
+
+msgid "Maximus"
+msgstr "Maximus"
 
 msgid "Next Hero"
 msgstr "Következő hős"
@@ -4493,6 +4940,10 @@ msgstr ""
 msgid "Slovak"
 msgstr ""
 
+#, fuzzy
+msgid "Vietnamese"
+msgstr "%{name} mutatása"
+
 msgid ", FPS: "
 msgstr ""
 
@@ -4508,9 +4959,6 @@ msgstr "Ector"
 msgid "Gwenneth"
 msgstr ""
 
-msgid "Lord Kilburn"
-msgstr "Lord Kilburn"
-
 #, fuzzy
 msgid "Sir Gallant"
 msgstr "Sir Gallanth"
@@ -4518,14 +4966,8 @@ msgstr "Sir Gallanth"
 msgid "Tyro"
 msgstr "Tyro"
 
-msgid "Ambrose"
-msgstr "Ambrose"
-
 msgid "Dimitry"
 msgstr "Dimitry"
-
-msgid "Maximus"
-msgstr "Maximus"
 
 msgid "Ruby"
 msgstr "Ruby"
@@ -4539,12 +4981,6 @@ msgstr "Fineous"
 msgid "Jezebel"
 msgstr "Jezebel"
 
-msgid "Jojosh"
-msgstr "Jojosh"
-
-msgid "Thundax"
-msgstr "Thundax"
-
 msgid "Atlas"
 msgstr "Atlas"
 
@@ -4554,29 +4990,11 @@ msgstr "Ergon"
 msgid "Jaclyn"
 msgstr "Jaclyn"
 
-msgid "Tsabu"
-msgstr "Tsabu"
-
-msgid "Astra"
-msgstr "Astra"
-
 msgid "Gem"
 msgstr "Gem"
 
 msgid "Natasha"
 msgstr "Natasha"
-
-msgid "Rebecca"
-msgstr "Rebecca"
-
-msgid "Troyan"
-msgstr "Troyan"
-
-msgid "Vatawna"
-msgstr "Vatawna"
-
-msgid "Ariel"
-msgstr "Ariel"
 
 msgid "Carlawn"
 msgstr "Carlawn"
@@ -4590,23 +5008,11 @@ msgstr "Arie"
 msgid "Barok"
 msgstr "Barok"
 
-msgid "Crodo"
-msgstr "Crodo"
-
 msgid "Kastore"
 msgstr "Kastore"
 
-msgid "Vesper"
-msgstr "Vesper"
-
-msgid "Agar"
-msgstr "Agar"
-
 msgid "Falagar"
 msgstr "Falagar"
-
-msgid "Wrathmont"
-msgstr "Wrathmont"
 
 msgid "Dawn"
 msgstr "Dawn"
@@ -4655,9 +5061,6 @@ msgstr "Celia"
 
 msgid "Roxana"
 msgstr "Roxana"
-
-msgid "Sandro"
-msgstr "Sandro"
 
 msgid "Lord Corlagon"
 msgstr "Lord Corlagon"
@@ -5297,9 +5700,6 @@ msgstr ""
 "Megszereztél egy fűrészmalmot. Ez naponta %{count} egységnyi fát biztosít "
 "számodra."
 
-msgid "You beat the Ghosts and are able to restore the mine to production."
-msgstr "Elűzted a szellemeket, a bánya újra használható."
-
 msgid ""
 "You gain control of an ore mine. It will provide you with %{count} units of "
 "ore per day."
@@ -5347,6 +5747,9 @@ msgid ""
 "You come upon an abandoned gold mine. The mine appears to be haunted. Do you "
 "wish to enter?"
 msgstr ""
+
+msgid "You beat the Ghosts and are able to restore the mine to production."
+msgstr "Elűzted a szellemeket, a bánya újra használható."
 
 msgid ""
 "A group of %{monster} with a desire for greater glory wish to join you. Do "
@@ -6388,9 +6791,9 @@ msgstr ""
 "használatára."
 
 #, fuzzy
-msgid "%{skill} regenerates one of your hero's spell points per day."
+msgid "%{skill} regenerates one additional spell point per day to your hero."
 msgid_plural ""
-"%{skill} regenerates %{count} of your hero's spell points per day."
+"%{skill} regenerates %{count} additional spell points per day to your hero."
 msgstr[0] ""
 "Alap Misztika naponta %{count}-vel növeli a varázspontok újratermelődését."
 msgstr[1] ""
@@ -8026,8 +8429,9 @@ msgstr ""
 msgid "Medal of Valor"
 msgstr "Vitézség Medál"
 
-msgid "The %{name} increases your morale."
-msgstr ""
+#, fuzzy
+msgid "The %{name} increases your morale by %{count}."
+msgstr "Alap Vezetés növeli a csapatod tagjainak morálját %{count}-gyel."
 
 msgid ""
 "Freeing a virtuous maiden from the clutches of an evil overlord, you are "
@@ -8109,7 +8513,7 @@ msgstr ""
 msgid "Ballista of Quickness"
 msgstr ""
 
-msgid "The %{name} lets your catapult fire twice per combat round."
+msgid "The %{name} gives your catapult one extra shot per combat round."
 msgstr ""
 
 msgid ""
@@ -8241,8 +8645,9 @@ msgstr ""
 msgid "Lucky Rabbit's Foot"
 msgstr ""
 
-msgid "The %{name} increases your luck in combat."
-msgstr ""
+#, fuzzy
+msgid "The %{name} increases your luck in combat by %{count}."
+msgstr "Alap Szerencse növeli a hős szerencséjét %{count}-gyel."
 
 msgid ""
 "A traveling merchant offers you a rabbit's foot, made of gleaming silver "

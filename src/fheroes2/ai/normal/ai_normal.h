@@ -21,6 +21,7 @@
 #ifndef H2AI_NORMAL_H
 #define H2AI_NORMAL_H
 
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <map>
@@ -32,11 +33,11 @@
 #include "color.h"
 #include "mp2.h"
 #include "pairs.h"
+#include "resource.h"
 #include "world_pathfinding.h"
 
 class Army;
 class Castle;
-class Funds;
 class HeroBase;
 class Heroes;
 class Kingdom;
@@ -93,6 +94,25 @@ namespace AI
             , buildingValue( inValue )
         {
             assert( castle != nullptr );
+        }
+    };
+
+    struct BudgetEntry
+    {
+        int resource = Resource::UNKNOWN;
+        int missing = 0;
+        bool priority = false;
+        bool recurringCost = false;
+
+        BudgetEntry( int type )
+            : resource( type )
+        {}
+
+        void reset()
+        {
+            missing = 0;
+            priority = false;
+            recurringCost = false;
         }
     };
 
@@ -184,12 +204,12 @@ namespace AI
 
         SpellcastOutcome spellDamageValue( const Spell & spell, Battle::Arena & arena, const Battle::Unit & currentUnit, const Battle::Units & friendly,
                                            const Battle::Units & enemies, bool retreating ) const;
-        SpellcastOutcome spellDispellValue( const Spell & spell, const Battle::Units & friendly, const Battle::Units & enemies ) const;
+        SpellcastOutcome spellDispelValue( const Spell & spell, const Battle::Units & friendly, const Battle::Units & enemies ) const;
         SpellcastOutcome spellResurrectValue( const Spell & spell, const Battle::Arena & arena ) const;
         SpellcastOutcome spellSummonValue( const Spell & spell, const Battle::Arena & arena, const int heroColor ) const;
         SpellcastOutcome spellEffectValue( const Spell & spell, const Battle::Units & targets ) const;
 
-        double spellEffectValue( const Spell & spell, const Battle::Unit & target, bool targetIsLast, bool forDispell ) const;
+        double spellEffectValue( const Spell & spell, const Battle::Unit & target, bool targetIsLast, bool forDispel ) const;
         double getSpellDisruptingRayRatio( const Battle::Unit & target ) const;
         double getSpellSlowRatio( const Battle::Unit & target ) const;
         double getSpellHasteRatio( const Battle::Unit & target ) const;
@@ -245,7 +265,7 @@ namespace AI
         std::set<int> findCastlesInDanger( const KingdomCastles & castles, const std::vector<std::pair<int, const Army *>> & enemyArmies, int myColor );
         std::vector<AICastle> getSortedCastleList( const KingdomCastles & castles, const std::set<int> & castlesInDanger );
 
-        double getObjectValue( const Heroes & hero, const int index, const double valueToIgnore, const uint32_t distanceToObject ) const;
+        double getObjectValue( const Heroes & hero, const int index, int & objectType, const double valueToIgnore, const uint32_t distanceToObject ) const;
         int getPriorityTarget( const HeroToMove & heroInfo, double & maxPriority );
         void resetPathfinder() override;
 
@@ -264,6 +284,7 @@ namespace AI
         std::vector<IndexObject> _mapObjects;
         std::map<int, PriorityTask> _priorityTargets;
         std::vector<RegionStats> _regions;
+        std::array<BudgetEntry, 7> _budget = { Resource::WOOD, Resource::MERCURY, Resource::ORE, Resource::SULFUR, Resource::CRYSTAL, Resource::GEMS, Resource::GOLD };
         AIWorldPathfinder _pathfinder;
         BattlePlanner _battlePlanner;
 
@@ -278,8 +299,10 @@ namespace AI
         double getFighterObjectValue( const Heroes & hero, const int index, const double valueToIgnore, const uint32_t distanceToObject ) const;
         double getCourierObjectValue( const Heroes & hero, const int index, const double valueToIgnore, const uint32_t distanceToObject ) const;
         int getCourierMainTarget( const Heroes & hero, double lowestPossibleValue ) const;
+        double getResourcePriorityModifier( const int resource ) const;
 
         void updatePriorityTargets( Heroes & hero, const int32_t tileIndex, const MP2::MapObjectType objectType );
+        void updateKingdomBudget( const Kingdom & kingdom );
 
         bool purchaseNewHeroes( const std::vector<AICastle> & sortedCastleList, const std::set<int> & castlesInDanger, int32_t availableHeroCount,
                                 bool moreTasksForHeroes );

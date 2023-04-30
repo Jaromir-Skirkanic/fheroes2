@@ -724,7 +724,7 @@ bool Battle::Arena::DialogBattleSummary( const Result & res, const std::vector<A
     return false;
 }
 
-void Battle::Arena::DialogBattleNecromancy( const uint32_t raiseCount, const uint32_t raisedMonsterType ) const
+void Battle::Arena::DialogBattleNecromancy( const uint32_t raiseCount )
 {
     // setup cursor
     const CursorRestorer cursorRestorer( true, Cursor::POINTER );
@@ -764,7 +764,7 @@ void Battle::Arena::DialogBattleNecromancy( const uint32_t raiseCount, const uin
     TextBox titleBox( _( "Necromancy!" ), Font::YELLOW_BIG, bsTextWidth );
     titleBox.Blit( xOffset, yOffset );
 
-    const Monster mons( raisedMonsterType );
+    const Monster mons( Monster::SKELETON );
     std::string msg = _( "Practicing the dark arts of necromancy, you are able to raise %{count} of the enemy's dead to return under your service as %{monster}." );
     StringReplace( msg, "%{count}", raiseCount );
     StringReplace( msg, "%{monster}", mons.GetPluralName( raiseCount ) );
@@ -783,7 +783,7 @@ void Battle::Arena::DialogBattleNecromancy( const uint32_t raiseCount, const uin
     Game::PlayPickupSound();
 
     const int buttonOffset = 121;
-    const int buttonICN = isEvilInterface ? ICN::WINCMBBE : ICN::WINCMBTB;
+    const int buttonICN = isEvilInterface ? ICN::BUTTON_SMALLER_OKAY_EVIL : ICN::BUTTON_SMALLER_OKAY_GOOD;
     fheroes2::Button buttonOk( renderArea.x + buttonOffset, renderArea.y + 410, buttonICN, 0, 1 );
     buttonOk.draw();
 
@@ -817,7 +817,7 @@ int Battle::Arena::DialogBattleHero( const HeroBase & hero, const bool buttons, 
     Cursor & cursor = Cursor::Get();
     cursor.SetThemes( Cursor::POINTER );
 
-    const bool readonly = current_color != hero.GetColor() || !buttons;
+    const bool readonly = _currentColor != hero.GetColor() || !buttons;
     const fheroes2::Sprite & dialog = fheroes2::AGG::GetICN( ( conf.isEvilInterfaceEnabled() ? ICN::VGENBKGE : ICN::VGENBKG ), 0 );
 
     const fheroes2::Point dialogShadow( 15, 15 );
@@ -835,7 +835,7 @@ int Battle::Arena::DialogBattleHero( const HeroBase & hero, const bool buttons, 
     pos_rt.width -= 15;
 
     const fheroes2::Rect portraitArea( pos_rt.x + 7, pos_rt.y + 35, 113, 108 );
-    const Heroes * actionHero = ( current_color == hero.GetColor() ) ? dynamic_cast<const Heroes *>( &hero ) : nullptr;
+    const Heroes * actionHero = ( _currentColor == hero.GetColor() ) ? dynamic_cast<const Heroes *>( &hero ) : nullptr;
 
     hero.PortraitRedraw( pos_rt.x + 12, pos_rt.y + 42, PORT_BIG, display );
     int col = ( Color::NONE == hero.GetColor() ? 1 : Color::GetIndex( hero.GetColor() ) + 1 );
@@ -923,15 +923,15 @@ int Battle::Arena::DialogBattleHero( const HeroBase & hero, const bool buttons, 
 
         if ( buttons ) {
             // The Cast Spell is available for a hero and a captain.
-            if ( le.MouseCursor( btnCast.area() ) && current_color == hero.GetColor() ) {
+            if ( le.MouseCursor( btnCast.area() ) && _currentColor == hero.GetColor() ) {
                 statusMessage = _( "Cast Spell" );
             }
             // The retreat is available during a player's turn only. A captain cannot retreat.
-            else if ( le.MouseCursor( btnRetreat.area() ) && current_color == hero.GetColor() && !hero.isCaptain() ) {
+            else if ( le.MouseCursor( btnRetreat.area() ) && _currentColor == hero.GetColor() && !hero.isCaptain() ) {
                 statusMessage = _( "Retreat" );
             }
             // The surrender is available during a player's turn only. A captain cannot surrender.
-            else if ( le.MouseCursor( btnSurrender.area() ) && current_color == hero.GetColor() && !hero.isCaptain() ) {
+            else if ( le.MouseCursor( btnSurrender.area() ) && _currentColor == hero.GetColor() && !hero.isCaptain() ) {
                 statusMessage = _( "Surrender" );
             }
             else if ( le.MouseCursor( btnClose.area() ) ) {
@@ -980,18 +980,18 @@ int Battle::Arena::DialogBattleHero( const HeroBase & hero, const bool buttons, 
             display.render();
         }
 
-        if ( le.MousePressRight( btnCast.area() ) && current_color == hero.GetColor() ) {
+        if ( le.MousePressRight( btnCast.area() ) && _currentColor == hero.GetColor() ) {
             Dialog::Message( _( "Cast Spell" ),
                              _( "Cast a magical spell. You may only cast one spell per combat round. The round is reset when every creature has had a turn." ),
                              Font::BIG );
         }
-        else if ( le.MousePressRight( btnRetreat.area() ) && current_color == hero.GetColor() && !hero.isCaptain() ) {
+        else if ( le.MousePressRight( btnRetreat.area() ) && _currentColor == hero.GetColor() && !hero.isCaptain() ) {
             Dialog::Message(
                 _( "Retreat" ),
                 _( "Retreat your hero, abandoning your creatures. Your hero will be available for you to recruit again, however, the hero will have only a novice hero's forces." ),
                 Font::BIG );
         }
-        else if ( le.MousePressRight( btnSurrender.area() ) && current_color == hero.GetColor() && !hero.isCaptain() ) {
+        else if ( le.MousePressRight( btnSurrender.area() ) && _currentColor == hero.GetColor() && !hero.isCaptain() ) {
             Dialog::Message(
                 _( "Surrender" ),
                 _( "Surrendering costs gold. However if you pay the ransom, the hero and all of his or her surviving creatures will be available to recruit again." ),

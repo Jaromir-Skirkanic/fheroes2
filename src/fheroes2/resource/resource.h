@@ -89,13 +89,13 @@ public:
         return !operator>=( funds );
     }
 
+    Funds max( const Funds & ) const;
     int32_t Get( int rs ) const;
     int32_t * GetPtr( int rs );
 
     int getLowestQuotient( const Funds & ) const;
     int GetValidItems() const;
     uint32_t GetValidItemsCount() const;
-
     void Trim(); // set all values to be >= 0
 
     void Reset();
@@ -120,6 +120,8 @@ namespace Resource
     const char * getDescription();
 
     int Rand( const bool includeGold );
+
+    Funds CalculateEventResourceUpdate( const Funds & currentFunds, const Funds & eventFunds );
 
     // Returns index sprite objnrsrc.icn
     uint8_t GetIndexSprite( int resource );

@@ -48,7 +48,6 @@
 
 class Castle;
 class StreamBase;
-class StreamBuf;
 
 namespace Battle
 {
@@ -70,9 +69,9 @@ namespace fheroes2
 struct HeroSeedsForLevelUp
 {
     uint32_t seedPrimarySkill = 0;
-    uint32_t seedSecondaySkill1 = 0;
-    uint32_t seedSecondaySkill2 = 0;
-    uint32_t seedSecondaySkillRandomChoose = 0;
+    uint32_t seedSecondarySkill1 = 0;
+    uint32_t seedSecondarySkill2 = 0;
+    uint32_t seedSecondarySkillRandomChoose = 0;
 };
 
 class Heroes final : public HeroBase, public ColorBase
@@ -285,7 +284,7 @@ public:
     const Castle * inCastle() const override;
     Castle * inCastleMutable() const;
 
-    void LoadFromMP2( int32_t map_index, int cl, int rc, StreamBuf );
+    void LoadFromMP2( const int32_t mapIndex, const int colorType, const int raceType, const std::vector<uint8_t> & data );
     void PostLoad();
 
     int GetRace() const override;
@@ -331,19 +330,19 @@ public:
     MP2::MapObjectType GetMapsObject() const;
     void SetMapsObject( const MP2::MapObjectType objectType );
 
-    const fheroes2::Point & GetCenterPatrol() const
+    const fheroes2::Point & GetPatrolCenter() const
     {
-        return patrol_center;
+        return _patrolCenter;
     }
 
-    void SetCenterPatrol( const fheroes2::Point & pos )
+    void SetPatrolCenter( const fheroes2::Point & pos )
     {
-        patrol_center = pos;
+        _patrolCenter = pos;
     }
 
-    int GetSquarePatrol() const
+    int GetPatrolDistance() const
     {
-        return patrol_square;
+        return _patrolDistance;
     }
 
     uint32_t GetMaxSpellPoints() const override;
@@ -559,7 +558,9 @@ public:
         return static_cast<uint8_t>( _alphaValue );
     }
 
-    double getAIMininumJoiningArmyStrength() const;
+    double getAIMinimumJoiningArmyStrength() const;
+
+    uint32_t getDailyRestoredSpellPoints() const;
 
 private:
     friend StreamBase & operator<<( StreamBase &, const Heroes & );
@@ -615,8 +616,8 @@ private:
     int sprite_index;
     fheroes2::Point _offset; // used only during hero's movement
 
-    fheroes2::Point patrol_center;
-    int patrol_square;
+    fheroes2::Point _patrolCenter;
+    int _patrolDistance;
 
     std::list<IndexObject> visit_object;
     uint32_t _lastGroundRegion = 0;
