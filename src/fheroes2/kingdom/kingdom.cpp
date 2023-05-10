@@ -484,10 +484,28 @@ bool Kingdom::isValidKingdomObject( const Maps::Tiles & tile, const MP2::MapObje
     if ( MP2::isCaptureObject( objectType ) )
         return !Players::isFriends( color, getColorFromTile( tile ) );
 
-    if ( MP2::isQuantityObject( objectType ) )
+    if ( MP2::isValuableResourceObject( objectType ) )
         return doesTileContainValuableItems( tile );
 
     return true;
+}
+
+bool Kingdom::opponentsCanRecruitMoreHeroes() const
+{
+    for ( int opponentColor : Players::getInPlayOpponents( GetColor() ) ) {
+        if ( world.GetKingdom( opponentColor ).canRecruitHeroes() )
+            return true;
+    }
+    return false;
+}
+
+bool Kingdom::opponentsHaveHeroes() const
+{
+    for ( int opponentColor : Players::getInPlayOpponents( GetColor() ) ) {
+        if ( world.GetKingdom( opponentColor ).hasHeroes() )
+            return true;
+    }
+    return false;
 }
 
 bool Kingdom::HeroesMayStillMove() const
